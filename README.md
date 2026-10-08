@@ -5,7 +5,12 @@ Students find chilled-drink nodes on a real campus map, lock a coil in escrow, s
 machine, get restock alerts and use a VIP pass. Suppliers watch telemetry, dispatch runners, approve
 clearance prices and confirm restocks.
 
-Everything runs **on the phone, offline**. Data lives in an on-device **SQLite database**.
+Accounts live in **Firebase** (project `forestflow-55d9c`), so an account created on one phone signs in on
+any other phone. Everything else (inventory, map, escrow, points…) is stored on the phone in an on-device
+**SQLite database** and works offline. Package name: `forest.flow` (matches the Firebase registration).
+
+`app/google-services.json` is kept out of Git on purpose. A fresh clone without it still builds and runs, with
+accounts stored per phone instead of in the cloud; drop the file back into `app/` to reconnect Firebase.
 
 ---
 
@@ -27,7 +32,7 @@ Requirements: Android 8.0 (API 26) or newer. Android Studio 2026.1 or newer (use
 |---|---|
 | WeChat one-tap | Tick the agreement, tap the green WeChat button (demo guest session) |
 | SMS | Any valid mainland number (e.g. `13800138000`) → **获取验证码** → code `482915` auto-fills → Sign In |
-| **XJTLU CAS (real accounts in SQLite)** | `student@xjtlu.test` / `forest123` (Student) · `supplier@xjtlu.test` / `forest123` (Supplier). Or tap *Create account* |
+| **XJTLU CAS (real accounts, Firebase)** | `student@xjtlu.test` / `forest123` (Student) · `supplier@xjtlu.test` / `forest123` (Supplier). Or tap *Create account* |
 | Visitor | Visitor tile (demo guest session) |
 
 Choose **Student** or **Supplier** with the switch at the top of the login screen first. A CAS account only
@@ -62,7 +67,7 @@ State survives closing the app (kill it and reopen: same tab, same escrow countd
 
 See it live: Android Studio ▸ **View ▸ Tool Windows ▸ App Inspection ▸ Database Inspector** while the app runs.
 
-### Shared accounts for everyone (Firebase)
+### Shared accounts for everyone (Firebase) — connected
 Without Firebase every phone keeps its **own** account database: anyone can create an account, but only on
 that phone. To let an account made on one phone sign in on any other phone, connect the free Firebase backend
 (the code is already in the app and verified, see *Tests*). The two demo accounts are created in the cloud
@@ -73,7 +78,9 @@ automatically the first time someone signs in with them, so they work on every p
 3. Enable **Authentication ▸ Email/Password** and create a **Cloud Firestore** database.
 4. Download `google-services.json` into `app/`.
 5. Sync Gradle and Run. CAS sign-in now uses Firebase; roles live in Firestore `users/{uid}`.
-   Suggested Firestore rule: `match /users/{uid} { allow read, write: if request.auth.uid == uid; }`
+   Only **Email/Password** sign-in is required: the role and name are stored on the Firebase account itself.
+   Optional, to also keep a `users/{uid}` copy in Firestore, publish this rule:
+   `match /users/{uid} { allow read, write: if request.auth != null && request.auth.uid == uid; }`
 
 Without that file the app builds and runs fully offline.
 
@@ -91,14 +98,14 @@ are illustrations without a path network, so there is no turn-by-turn routing.
 
 * `./gradlew test` — 60 JVM tests: every reducer action, map geometry (clamp, rubber-band, momentum
   projection), bilingual search, password hashing, and that every vending node sits on its own building in `map_data.json`.
-* `./gradlew connectedDebugAndroidTest` (phone or emulator attached) — 11 instrumented tests on the real
+* `./gradlew connectedDebugAndroidTest` (phone or emulator attached) — 15 instrumented tests on the real
   SQLite backend (tables, auth, persistence across restarts, escrow expiry after reopen, role mismatch) and
   end-to-end UI flows that tap through every Student and Supplier feature, and real multi-touch on the
   map (double-tap zoom, pinch in/out, pan, an over-the-edge fling that must settle inside the image).
 * `./gradlew lint` — no issues.
 
-* `FirebaseBackendTest` (4 tests) runs when the app is built with a `google-services.json`. It was run against the
-  local **Firebase Emulator Suite** (project `demo-forestflow`): an account created by one app instance signs in
+* `FirebaseBackendTest` (4 tests) runs when the app is built with a `google-services.json`. It passes against the
+  **real Firebase project** and against the local **Firebase Emulator Suite** (project `demo-forestflow`): an account created by one app instance signs in
   from a second instance with the same role and name, the app's own CAS login path works on Firebase, wrong
   passwords and duplicate e-mails are rejected, and the demo accounts auto-provision. Reproduce with
   `firebase emulators:start --only auth,firestore --project demo-forestflow`, a demo `app/google-services.json`, and

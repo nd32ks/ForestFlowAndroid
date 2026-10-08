@@ -14,6 +14,7 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.tasks.await
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -62,6 +63,15 @@ class FirebaseBackendTest {
         assertTrue(phoneB.signIn(email, "wrong-pass") is AuthResult.Err)
         assertTrue(phoneB.signUp("Dup", email, "campus2026", Role.Student) is AuthResult.Err)
         assertTrue(phoneB.signIn("nobody${System.nanoTime()}@xjtlu.test", "campus2026") is AuthResult.Err)
+        deleteAccount(email, "campus2026")
+    }
+
+    /** Removes a throw-away test account (Firestore doc + Auth user) so the real project stays clean. */
+    private fun deleteAccount(email: String, password: String) = runBlocking {
+        val auth = FirebaseAuth.getInstance()
+        val user = auth.signInWithEmailAndPassword(email, password).await().user ?: return@runBlocking
+        runCatching { FirebaseFirestore.getInstance().collection("users").document(user.uid).delete().await() }
+        user.delete().await()
     }
 
     @Test fun app_cas_sheet_creates_and_signs_in_cloud_account() {
@@ -111,6 +121,8 @@ class FirebaseBackendTest {
         assertEquals(Role.Supplier, st.session!!.role)
         assertEquals("Cloud Ops", b.state.value.session!!.displayName)
         inst.runOnMainSync { b.dispatch(Action.Logout) }
+        Thread.sleep(500)
+        deleteAccount(email, "restock99")
     }
 
     @Test fun demo_accounts_work_on_every_phone() = runBlocking {

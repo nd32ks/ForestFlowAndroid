@@ -15,7 +15,8 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.chiforest.forestflow"
+        // Matches the Android app registered in Firebase project forestflow-55d9c.
+        applicationId = "forest.flow"
         minSdk = 26
         targetSdk = 37
         versionCode = 1

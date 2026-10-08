@@ -16,6 +16,7 @@ import com.chiforest.forestflow.core.Role
 import com.chiforest.forestflow.core.Session
 import com.chiforest.forestflow.core.UserRow
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.json.Json
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -152,6 +153,7 @@ class BackendTest {
     }
 
     @Test fun cas_role_mismatch_is_rejected() {
+        val opsEmail = "ops${System.currentTimeMillis()}@xjtlu.test"
         val inst = InstrumentationRegistry.getInstrumentation()
         val vm: AppViewModel? = newVm()
         waitUntil { vm!!.ready.value }
@@ -176,11 +178,17 @@ class BackendTest {
             vm!!.dispatch(Action.Logout)
             vm!!.dispatch(Action.Agree)
             vm!!.dispatch(Action.SetRole(Role.Supplier))
-            vm!!.casSubmit("ops2@xjtlu.test", "restock99", true, "Ops Two")
+            vm!!.casSubmit(opsEmail, "restock99", true, "Ops Two")
         }
         waitUntil { vm!!.state.value.session != null }
         assertEquals("Ops Two", vm!!.state.value.session!!.displayName)
         assertEquals(Role.Supplier, vm!!.state.value.session!!.role)
+        // when the build talks to Firebase, remove the throw-away cloud account again
+        if (vm!!.authBackend == "Firebase") runBlocking {
+            com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.let { u ->
+                if (u.email.equals(opsEmail, true)) u.delete().await()
+            }
+        }
     }
 
     private fun waitUntil(timeoutMs: Long = 8_000, cond: () -> Boolean) {
