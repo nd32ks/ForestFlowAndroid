@@ -1,0 +1,10 @@
+.gradle/
+build/
+build.nosync/
+local.properties
+.idea/
+*.iml
+.kotlin/
+app/google-services.json
+.DS_Store
+*.apk

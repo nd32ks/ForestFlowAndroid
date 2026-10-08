@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <group android:translateX="0" android:translateY="0">
+        <!-- 气: top hook, three horizontal strokes, right descending hook -->
+        <path android:strokeColor="#FFFFFF" android:strokeWidth="5.2" android:strokeLineCap="round" android:strokeLineJoin="round"
+            android:pathData="M44,33 L36,45" />
+        <path android:strokeColor="#FFFFFF" android:strokeWidth="5.2" android:strokeLineCap="round" android:strokeLineJoin="round"
+            android:pathData="M42,40 L72,40" />
+        <path android:strokeColor="#FFFFFF" android:strokeWidth="5.2" android:strokeLineCap="round" android:strokeLineJoin="round"
+            android:pathData="M45,50 L67,50" />
+        <path android:strokeColor="#FFFFFF" android:strokeWidth="5.2" android:strokeLineCap="round" android:strokeLineJoin="round"
+            android:pathData="M38,60 L68,60 C69,68 70,74 73,77 C75,79 78,78 78,73" />
+    </group>
+</vector>

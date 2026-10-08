@@ -1,0 +1,754 @@
+{
+ "version": 1,
+ "note": "Anchors are fractions of image width/height. Nodes marked demo:true are placeholder machine locations - edit this file to move them.",
+ "campuses": [
+  {
+   "id": "tc",
+   "name": "Taicang",
+   "nameZh": "太仓",
+   "subtitle": "XJTLU Taicang",
+   "image": "maps/tc_campus.png",
+   "northBearingDeg": 35,
+   "initialCenter": [
+    0.668,
+    0.515
+   ],
+   "initialZoom": 1.6,
+   "maxZoom": 4.0,
+   "buildings": [
+    {
+     "code": "A",
+     "name": "Building A",
+     "nameZh": "A栋",
+     "departments": [
+      "CHIPS 芯片学院",
+      "IRE Intelligent Robotics 智能机器人",
+      "IME 智造生态学院",
+      "Dining Hall 餐厅"
+     ],
+     "anchor": [
+      0.7117,
+      0.6148
+     ]
+    },
+    {
+     "code": "B",
+     "name": "Building B",
+     "nameZh": "B栋",
+     "departments": [
+      "Scholar Space 学者空间"
+     ],
+     "anchor": [
+      0.7647,
+      0.5453
+     ]
+    },
+    {
+     "code": "C",
+     "name": "Building C",
+     "nameZh": "C栋",
+     "departments": [
+      "CHIPS 芯片学院",
+      "X³ CoVenture 浦创汇",
+      "Innovation Factory 创新工场"
+     ],
+     "anchor": [
+      0.7441,
+      0.4078
+     ]
+    },
+    {
+     "code": "D",
+     "name": "Building D",
+     "nameZh": "D栋",
+     "departments": [
+      "AIAC AI & Advanced Computing 人工智能与先进计算学院",
+      "IOT 物联网学院",
+      "Library 图书馆 (1F-2F)"
+     ],
+     "anchor": [
+      0.6663,
+      0.3805
+     ]
+    },
+    {
+     "code": "E",
+     "name": "Building E",
+     "nameZh": "E栋",
+     "departments": [
+      "IFB 产金融合学院",
+      "EEH Entrepreneurship 创业与企业港",
+      "Learning Mall 学习超市 (2F-3F)"
+     ],
+     "anchor": [
+      0.5967,
+      0.4141
+     ]
+    },
+    {
+     "code": "F",
+     "name": "Building F",
+     "nameZh": "F栋",
+     "departments": [
+      "Western Restaurant 西餐厅 (1F)"
+     ],
+     "anchor": [
+      0.5778,
+      0.5531
+     ]
+    },
+    {
+     "code": "G",
+     "name": "Building G",
+     "nameZh": "G栋",
+     "departments": [
+      "SCT Culture & Technology 文化科技学院",
+      "Museum 博物馆 (1F)"
+     ],
+     "anchor": [
+      0.6103,
+      0.643
+     ]
+    },
+    {
+     "code": "H",
+     "name": "Building H",
+     "nameZh": "H栋",
+     "departments": [
+      "Administrative Services Centre 行政中心"
+     ],
+     "anchor": [
+      0.6869,
+      0.4531
+     ]
+    },
+    {
+     "code": "J",
+     "name": "Building J",
+     "nameZh": "J栋",
+     "departments": [
+      "Students Centre 学生中心"
+     ],
+     "anchor": [
+      0.6191,
+      0.5492
+     ]
+    },
+    {
+     "code": "M",
+     "name": "Building M",
+     "nameZh": "M栋",
+     "departments": [
+      "Multifunctional Hall 多功能厅"
+     ],
+     "anchor": [
+      0.5649,
+      0.1977
+     ]
+    },
+    {
+     "code": "S",
+     "name": "Building S",
+     "nameZh": "S栋",
+     "departments": [
+      "Stadium 体育馆"
+     ],
+     "anchor": [
+      0.4499,
+      0.2828
+     ]
+    }
+   ],
+   "entrances": [
+    {
+     "id": "tc-n",
+     "name": "North Gate",
+     "nameZh": "北门",
+     "anchor": [
+      0.6545,
+      0.168
+     ]
+    },
+    {
+     "id": "tc-s",
+     "name": "South Gate",
+     "nameZh": "南门",
+     "anchor": [
+      0.6456,
+      0.8398
+     ]
+    },
+    {
+     "id": "tc-w",
+     "name": "West Gate",
+     "nameZh": "西门",
+     "anchor": [
+      0.3608,
+      0.4906
+     ]
+    },
+    {
+     "id": "tc-e",
+     "name": "East Gate",
+     "nameZh": "东门",
+     "anchor": [
+      0.8726,
+      0.5156
+     ]
+    }
+   ],
+   "pointsOfInterest": [
+    {
+     "id": "court",
+     "name": "Court",
+     "nameZh": "球场",
+     "anchor": [
+      0.4009,
+      0.4031
+     ]
+    },
+    {
+     "id": "sports",
+     "name": "Sports Ground",
+     "nameZh": "运动场",
+     "anchor": [
+      0.3998,
+      0.5664
+     ]
+    },
+    {
+     "id": "minihub",
+     "name": "Mini Hub",
+     "nameZh": "西浦小屋",
+     "anchor": [
+      0.5283,
+      0.4641
+     ]
+    }
+   ],
+   "nodes": [
+    {
+     "id": "N01",
+     "num": "01",
+     "name": "Chi Forest Smart Node 01",
+     "label": "Bldg G Atrium",
+     "building": "G",
+     "location": "Bldg G Ground Floor Atrium",
+     "status": "online",
+     "pct": 82,
+     "tempC": 3.8,
+     "walkMin": 2,
+     "distanceM": 180,
+     "anchor": [
+      0.622,
+      0.652
+     ],
+     "ready": {
+      "White Peach": 6,
+      "Lychee": 1,
+      "Calamansi": 8
+     },
+     "demo": true
+    },
+    {
+     "id": "N02",
+     "num": "02",
+     "name": "Chi Forest Smart Node 02",
+     "label": "AI Lab 2F",
+     "building": "D",
+     "location": "Bldg D · AI Lab 2F",
+     "status": "online",
+     "pct": 91,
+     "tempC": 3.5,
+     "walkMin": 5,
+     "distanceM": 420,
+     "anchor": [
+      0.68,
+      0.392
+     ],
+     "ready": {
+      "White Peach": 9,
+      "Lychee": 7,
+      "Calamansi": 5,
+      "Osmanthus": 3
+     },
+     "demo": true
+    },
+    {
+     "id": "N03",
+     "num": "03",
+     "name": "Chi Forest Smart Node 03",
+     "label": "Library 1F Hub",
+     "building": "D",
+     "location": "Bldg D · Library 1F Hub",
+     "status": "low",
+     "pct": 38,
+     "tempC": 4.6,
+     "walkMin": 5,
+     "distanceM": 430,
+     "anchor": [
+      0.654,
+      0.372
+     ],
+     "ready": {
+      "White Peach": 3,
+      "Lychee": 0,
+      "Calamansi": 2
+     },
+     "demo": true
+    },
+    {
+     "id": "N04",
+     "num": "04",
+     "name": "Chi Forest Smart Node 04",
+     "label": "Bldg F Restaurant",
+     "building": "F",
+     "location": "Bldg F · Western Restaurant",
+     "status": "online",
+     "pct": 64,
+     "tempC": 3.9,
+     "walkMin": 3,
+     "distanceM": 260,
+     "anchor": [
+      0.59,
+      0.562
+     ],
+     "ready": {
+      "White Peach": 4,
+      "Lychee": 5,
+      "Calamansi": 6
+     },
+     "demo": true
+    },
+    {
+     "id": "N05",
+     "num": "05",
+     "name": "Chi Forest Smart Node 05",
+     "label": "Bldg A Dining",
+     "building": "A",
+     "location": "Bldg A · Dining Hall",
+     "status": "online",
+     "pct": 76,
+     "tempC": 3.6,
+     "walkMin": 4,
+     "distanceM": 340,
+     "anchor": [
+      0.723,
+      0.624
+     ],
+     "ready": {
+      "White Peach": 7,
+      "Lychee": 4,
+      "Calamansi": 9,
+      "Osmanthus": 2
+     },
+     "demo": true
+    },
+    {
+     "id": "N06",
+     "num": "06",
+     "name": "Chi Forest Smart Node 06",
+     "label": "Scholar Space",
+     "building": "B",
+     "location": "Bldg B · Scholar Space",
+     "status": "low",
+     "pct": 22,
+     "tempC": 4.2,
+     "walkMin": 6,
+     "distanceM": 510,
+     "anchor": [
+      0.777,
+      0.555
+     ],
+     "ready": {
+      "White Peach": 1,
+      "Lychee": 2,
+      "Calamansi": 0
+     },
+     "demo": true
+    }
+   ]
+  },
+  {
+   "id": "sip",
+   "name": "SIP",
+   "nameZh": "园区",
+   "subtitle": "XJTLU SIP · Suzhou",
+   "image": "maps/sip_campus.png",
+   "northBearingDeg": 0,
+   "initialCenter": [
+    0.45,
+    0.66
+   ],
+   "initialZoom": 1.35,
+   "maxZoom": 4.0,
+   "buildings": [
+    {
+     "code": "LS",
+     "name": "Life Sciences Building",
+     "nameZh": "生命科学楼",
+     "departments": [
+      "Life Sciences 生命科学"
+     ],
+     "anchor": [
+      0.181,
+      0.2247
+     ]
+    },
+    {
+     "code": "FB",
+     "name": "Foundation Building",
+     "nameZh": "基础楼",
+     "departments": [
+      "Foundation Year 基础"
+     ],
+     "anchor": [
+      0.3016,
+      0.4112
+     ]
+    },
+    {
+     "code": "CB",
+     "name": "Central Building",
+     "nameZh": "中心楼",
+     "departments": [
+      "Library 图书馆",
+      "Registry 注册处",
+      "Student Services 学生事务"
+     ],
+     "anchor": [
+      0.3131,
+      0.5722
+     ]
+    },
+    {
+     "code": "SA",
+     "name": "Science Building A",
+     "nameZh": "理科楼A",
+     "departments": [
+      "Science 理科"
+     ],
+     "anchor": [
+      0.473,
+      0.5311
+     ]
+    },
+    {
+     "code": "SB",
+     "name": "Science Building B",
+     "nameZh": "理科楼B",
+     "departments": [
+      "Science 理科"
+     ],
+     "anchor": [
+      0.473,
+      0.5716
+     ]
+    },
+    {
+     "code": "SC",
+     "name": "Science Building C",
+     "nameZh": "理科楼C",
+     "departments": [
+      "Science 理科"
+     ],
+     "anchor": [
+      0.473,
+      0.6122
+     ]
+    },
+    {
+     "code": "SD",
+     "name": "Science Building D",
+     "nameZh": "理科楼D",
+     "departments": [
+      "Science 理科"
+     ],
+     "anchor": [
+      0.473,
+      0.6533
+     ]
+    },
+    {
+     "code": "PB",
+     "name": "Public Building",
+     "nameZh": "公共楼",
+     "departments": [
+      "Lecture Halls 公共教室"
+     ],
+     "anchor": [
+      0.5619,
+      0.5311
+     ]
+    },
+    {
+     "code": "MA",
+     "name": "Mathematics Building A",
+     "nameZh": "数学楼A",
+     "departments": [
+      "Mathematics 数学"
+     ],
+     "anchor": [
+      0.6254,
+      0.5311
+     ]
+    },
+    {
+     "code": "MB",
+     "name": "Mathematics Building B",
+     "nameZh": "数学楼B",
+     "departments": [
+      "Mathematics 数学"
+     ],
+     "anchor": [
+      0.6539,
+      0.5676
+     ]
+    },
+    {
+     "code": "EB",
+     "name": "Engineering Building",
+     "nameZh": "工科楼",
+     "departments": [
+      "Engineering 工程"
+     ],
+     "anchor": [
+      0.6539,
+      0.6273
+     ]
+    },
+    {
+     "code": "EE",
+     "name": "Electrical & Electronic Engineering",
+     "nameZh": "电子与电气工程楼",
+     "departments": [
+      "EEE 电子与电气工程"
+     ],
+     "anchor": [
+      0.5651,
+      0.6533
+     ]
+    },
+    {
+     "code": "AS",
+     "name": "Film & Creative Technology Building",
+     "nameZh": "影视与创意科技楼",
+     "departments": [
+      "Film & Creative Technology 影视与创意科技"
+     ],
+     "anchor": [
+      0.3701,
+      0.7396
+     ]
+    },
+    {
+     "code": "IR",
+     "name": "International Research Centre",
+     "nameZh": "国际科研中心",
+     "departments": [
+      "Research 科研"
+     ],
+     "anchor": [
+      0.4717,
+      0.7598
+     ]
+    },
+    {
+     "code": "IA",
+     "name": "International Academic Exchange & Collaboration Centre",
+     "nameZh": "国际学术交流中心",
+     "departments": [
+      "Academic Exchange 学术交流"
+     ],
+     "anchor": [
+      0.5746,
+      0.776
+     ]
+    },
+    {
+     "code": "BS",
+     "name": "International Business School Suzhou",
+     "nameZh": "西浦国际商学院",
+     "departments": [
+      "IBSS Business 商学院"
+     ],
+     "anchor": [
+      0.4019,
+      0.8473
+     ]
+    },
+    {
+     "code": "HS",
+     "name": "Humanities & Social Sciences Building",
+     "nameZh": "人文和社科楼",
+     "departments": [
+      "Humanities 人文",
+      "Social Sciences 社科"
+     ],
+     "anchor": [
+      0.5796,
+      0.8629
+     ]
+    },
+    {
+     "code": "DB",
+     "name": "Design Building",
+     "nameZh": "设计楼",
+     "departments": [
+      "Design 设计",
+      "Architecture 建筑"
+     ],
+     "anchor": [
+      0.6159,
+      0.9156
+     ]
+    },
+    {
+     "code": "ES",
+     "name": "Emerging & Interdisciplinary Science Building",
+     "nameZh": "新兴科学楼",
+     "departments": [
+      "Emerging Science 新兴科学"
+     ],
+     "anchor": [
+      0.4616,
+      0.9579
+     ]
+    },
+    {
+     "code": "GYM",
+     "name": "Gymnasium",
+     "nameZh": "体育馆",
+     "departments": [
+      "Sports 体育"
+     ],
+     "anchor": [
+      0.7111,
+      0.7685
+     ]
+    }
+   ],
+   "entrances": [],
+   "pointsOfInterest": [],
+   "nodes": [
+    {
+     "id": "N07",
+     "num": "07",
+     "name": "Chi Forest Smart Node 07",
+     "label": "CB Ground Floor",
+     "building": "CB",
+     "location": "Central Building · Ground Floor",
+     "status": "online",
+     "pct": 88,
+     "tempC": 3.4,
+     "walkMin": 3,
+     "distanceM": 240,
+     "anchor": [
+      0.321,
+      0.5858
+     ],
+     "ready": {
+      "White Peach": 8,
+      "Lychee": 6,
+      "Calamansi": 7,
+      "Osmanthus": 4
+     },
+     "demo": true
+    },
+    {
+     "id": "N08",
+     "num": "08",
+     "name": "Chi Forest Smart Node 08",
+     "label": "SA Lobby",
+     "building": "SA",
+     "location": "Science Building A · Lobby",
+     "status": "online",
+     "pct": 57,
+     "tempC": 3.9,
+     "walkMin": 4,
+     "distanceM": 330,
+     "anchor": [
+      0.481,
+      0.5392
+     ],
+     "ready": {
+      "White Peach": 5,
+      "Lychee": 2,
+      "Calamansi": 4
+     },
+     "demo": true
+    },
+    {
+     "id": "N09",
+     "num": "09",
+     "name": "Chi Forest Smart Node 09",
+     "label": "FB Atrium",
+     "building": "FB",
+     "location": "Foundation Building · Atrium",
+     "status": "online",
+     "pct": 73,
+     "tempC": 4.1,
+     "walkMin": 5,
+     "distanceM": 410,
+     "anchor": [
+      0.3098,
+      0.4196
+     ],
+     "ready": {
+      "White Peach": 6,
+      "Lychee": 3,
+      "Calamansi": 5
+     },
+     "demo": true
+    },
+    {
+     "id": "N10",
+     "num": "10",
+     "name": "Chi Forest Smart Node 10",
+     "label": "IBSS Café",
+     "building": "BS",
+     "location": "IBSS · Level 1 Café",
+     "status": "online",
+     "pct": 69,
+     "tempC": 3.7,
+     "walkMin": 7,
+     "distanceM": 580,
+     "anchor": [
+      0.4097,
+      0.8554
+     ],
+     "ready": {
+      "White Peach": 5,
+      "Lychee": 4,
+      "Calamansi": 3,
+      "Osmanthus": 1
+     },
+     "demo": true
+    },
+    {
+     "id": "N11",
+     "num": "11",
+     "name": "Chi Forest Smart Node 11",
+     "label": "Design Studio",
+     "building": "DB",
+     "location": "Design Building · Studio Wing",
+     "status": "low",
+     "pct": 31,
+     "tempC": 4.4,
+     "walkMin": 8,
+     "distanceM": 650,
+     "anchor": [
+      0.6237,
+      0.9223
+     ],
+     "ready": {
+      "White Peach": 2,
+      "Lychee": 1,
+      "Calamansi": 0
+     },
+     "demo": true
+    }
+   ]
+  }
+ ]
+}
