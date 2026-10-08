@@ -5,14 +5,13 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.chiforest.forestflow.auth.AuthResult
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
@@ -23,7 +22,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/** Single source of truth: StateFlow<AppState> + SharedFlow<Effect>, persisted to SQLite. */
+/** Single source of truth: StateFlow<AppState> + SharedFlow<Effect>, persisted to SQLite on every change. */
 class AppViewModel(private val c: AppContainer) : ViewModel() {
     private val reducer = Reducer(c.mapData)
     val mapData: MapData get() = c.mapData
@@ -68,13 +67,12 @@ class AppViewModel(private val c: AppContainer) : ViewModel() {
         }
     }
 
-    @OptIn(FlowPreview::class)
     private fun persist() {
         viewModelScope.launch {
             _state.map { json.encodeToString(AppState.serializer(), it) }
                 .distinctUntilChanged()
                 .drop(1)
-                .debounce(250)
+                .conflate() // no debounce: a sign-out is on disk before the user can kill the app
                 .collect { snapshot -> withContext(Dispatchers.IO) { runCatching { c.db.saveState(snapshot, System.currentTimeMillis()) } } }
         }
     }

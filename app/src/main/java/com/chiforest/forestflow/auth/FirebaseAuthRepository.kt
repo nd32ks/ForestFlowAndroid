@@ -21,7 +21,12 @@ class FirebaseAuthRepository : AuthRepository {
 
     override suspend fun signIn(email: String, password: String): AuthResult = runCatching {
         AuthRules.validate(email, password)?.let { return AuthResult.Err(it) }
-        val user = auth.signInWithEmailAndPassword(email.trim(), password).await().user
+        val user = runCatching { auth.signInWithEmailAndPassword(email.trim(), password).await().user }
+            .getOrElse { e ->
+                // The two published demo accounts are created in the cloud on first use, so they work on every phone.
+                val demoRole = demoRole(email, password) ?: throw e
+                return signUp(if (demoRole == Role.Student) "Demo Student" else "Zhang (Ops)", email, password, demoRole)
+            }
             ?: return AuthResult.Err("Sign-in failed")
         val doc = store.collection("users").document(user.uid).get().await()
         val role = runCatching { Role.valueOf(doc.getString("role") ?: "Student") }.getOrDefault(Role.Student)
@@ -40,6 +45,13 @@ class FirebaseAuthRepository : AuthRepository {
         current.value = s
         AuthResult.Ok(s)
     }.getOrElse { AuthResult.Err(it.message ?: "Could not create account") }
+
+    private fun demoRole(email: String, password: String): Role? = when {
+        password != LocalAuthRepository.DEMO_PASSWORD -> null
+        email.trim().equals(LocalAuthRepository.DEMO_STUDENT, true) -> Role.Student
+        email.trim().equals(LocalAuthRepository.DEMO_SUPPLIER, true) -> Role.Supplier
+        else -> null
+    }
 
     override suspend fun signOut() {
         auth.signOut()

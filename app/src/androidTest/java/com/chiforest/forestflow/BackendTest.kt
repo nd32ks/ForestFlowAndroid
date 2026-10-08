@@ -121,7 +121,7 @@ class BackendTest {
             vm!!.dispatch(Action.LayerToggle("entrances"))
             vm!!.dispatch(Action.Tab(2))
         }
-        // persistence is debounced (250ms) and written on IO
+        // persistence is written on IO right after each change
         waitUntil {
             val raw = ForestDatabase(ctx).use { it.loadState() } ?: return@waitUntil false
             raw.contains("N05") && raw.contains("d3")

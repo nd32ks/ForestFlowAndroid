@@ -53,3 +53,6 @@ Judgment calls made where the brief was silent, or where it had to be overridden
 - A database write failing (e.g. storage removed) can no longer crash the app: every SQLite call in the ViewModel is guarded.
 - Build outputs go to `build.nosync/` because the project sits in iCloud Drive; iCloud does not sync `.nosync` folders, which stops it from moving files under Gradle mid-build.
 - **Double-tap zoom did not fire** (the tap detector lost events to the pan handler). Double-tap is now recognised inside the map's own gesture handler: two short presses within 300 ms and 48 dp toggle 2.5× at the tap point ↔ fit. A double-tap that starts on a pin selects the pin instead of zooming.
+- **State persistence had a 250 ms debounce**, so signing out and killing the app at once could reopen signed in. Every change is now written straight away (writes are coalesced, never dropped).
+- **Firebase backend verified** against the Firebase Emulator Suite: cross-instance sign-in, roles from Firestore, the app's CAS path, demo-account auto-provisioning. Debug builds allow plain HTTP only to `10.0.2.2`/`localhost` (emulator); release builds do not.
+- The two published demo accounts are auto-created in Firebase on first sign-in (only with the published password), so a fresh Firebase project works for the demo without manual setup.

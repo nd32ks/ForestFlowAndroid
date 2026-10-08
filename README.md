@@ -57,17 +57,23 @@ State survives closing the app (kill it and reopen: same tab, same escrow countd
 | Table | Holds |
 |---|---|
 | `users` | Local accounts. Passwords stored only as **PBKDF2-HMAC-SHA256** (random 16-byte salt, 120 000 iterations). |
-| `app_state` | One-row JSON snapshot of the whole app state, written 250 ms after any change |
+| `app_state` | One-row JSON snapshot of the whole app state, written after every change |
 | `activity_log` | Append-only audit: logins, locks, releases, redemptions, restocks, surges … |
 
 See it live: Android Studio ▸ **View ▸ Tool Windows ▸ App Inspection ▸ Database Inspector** while the app runs.
 
-### Optional: Firebase instead of local accounts
+### Shared accounts for everyone (Firebase)
+Without Firebase every phone keeps its **own** account database: anyone can create an account, but only on
+that phone. To let an account made on one phone sign in on any other phone, connect the free Firebase backend
+(the code is already in the app and verified, see *Tests*). The two demo accounts are created in the cloud
+automatically the first time someone signs in with them, so they work on every phone too.
+
 1. Create a free Firebase project (Spark plan).
 2. Add an Android app with package `com.chiforest.forestflow`.
 3. Enable **Authentication ▸ Email/Password** and create a **Cloud Firestore** database.
 4. Download `google-services.json` into `app/`.
 5. Sync Gradle and Run. CAS sign-in now uses Firebase; roles live in Firestore `users/{uid}`.
+   Suggested Firestore rule: `match /users/{uid} { allow read, write: if request.auth.uid == uid; }`
 
 Without that file the app builds and runs fully offline.
 
@@ -90,6 +96,13 @@ are illustrations without a path network, so there is no turn-by-turn routing.
   end-to-end UI flows that tap through every Student and Supplier feature, and real multi-touch on the
   map (double-tap zoom, pinch in/out, pan, an over-the-edge fling that must settle inside the image).
 * `./gradlew lint` — no issues.
+
+* `FirebaseBackendTest` (4 tests) runs when the app is built with a `google-services.json`. It was run against the
+  local **Firebase Emulator Suite** (project `demo-forestflow`): an account created by one app instance signs in
+  from a second instance with the same role and name, the app's own CAS login path works on Firebase, wrong
+  passwords and duplicate e-mails are rejected, and the demo accounts auto-provision. Reproduce with
+  `firebase emulators:start --only auth,firestore --project demo-forestflow`, a demo `app/google-services.json`, and
+  `./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.firebaseEmulator=10.0.2.2`.
 
 All of the above pass (verified on an Android 16 / API 36 emulator).
 Build outputs are written to `app/build.nosync/` (kept out of iCloud sync).
