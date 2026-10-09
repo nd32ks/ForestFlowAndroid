@@ -111,7 +111,7 @@ are illustrations without a path network, so there is no turn-by-turn routing.
   `firebase emulators:start --only auth,firestore --project demo-forestflow`, a demo `app/google-services.json`, and
   `./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.firebaseEmulator=10.0.2.2`.
 
-All of the above pass (verified on an Android 16 / API 36 emulator).
+All of the above pass on a physical phone (Nothing A059, Android 17 / API 37) and on an Android 16 / API 36 emulator.
 Build outputs are written to `app/build.nosync/` (kept out of iCloud sync).
 
 ## Project layout
