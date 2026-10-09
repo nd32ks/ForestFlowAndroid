@@ -29,10 +29,19 @@ class Reducer(private val map: MapData) {
             Next(s.copy(loggingIn = "visitor"), listOf(Effect.StartLogin("visitor", s.loginRole)))
         is Action.LoginSucceeded -> {
             val role = a.session.role
+            // Every account sees only its own data: its saved copy, the data already on screen if it is
+            // the same account signing back in, or fresh demo data for a first sign-in.
+            val base = when {
+                a.restored != null -> a.restored
+                s.ownerUid == a.session.uid -> s
+                else -> Seed.fresh(a.now)
+            }
             Next(
-                s.copy(
-                    session = a.session, loginRole = role, loggingIn = null, casBusy = false, casError = null,
-                    sheet = null, customerTab = 0, supplierTab = 0, smsCode = "", codeSentAt = 0,
+                base.copy(
+                    session = a.session, ownerUid = a.session.uid, loginRole = role, agreed = true,
+                    loggingIn = null, casBusy = false, casError = null,
+                    sheet = null, customerTab = 0, supplierTab = 0, phone = s.phone, smsCode = "", codeSentAt = 0,
+                    shakeField = null, shakeNonce = s.shakeNonce, mapFocus = null, focusNonce = s.focusNonce,
                 ),
                 listOf(
                     Effect.Toast(

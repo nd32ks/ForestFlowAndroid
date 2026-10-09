@@ -11,7 +11,12 @@ sealed interface Action {
     data object CodeAutofill : Action
     data class Login(val method: String) : Action          // wechat | sms | cas
     data object Visitor : Action
-    data class LoginSucceeded(val session: Session) : Action
+    /** [restored] = this account's saved data (null for a new account); [now] seeds fresh demo data. */
+    data class LoginSucceeded(
+        val session: Session,
+        val restored: AppState? = null,
+        val now: Long = System.currentTimeMillis(),
+    ) : Action
     data class CasFailed(val message: String) : Action
     data object CasStarted : Action
 

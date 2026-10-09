@@ -96,9 +96,9 @@ are illustrations without a path network, so there is no turn-by-turn routing.
 
 ## Tests
 
-* `./gradlew test` — 61 JVM tests: every reducer action, map geometry (clamp, rubber-band, momentum
+* `./gradlew test` — 62 JVM tests: every reducer action, map geometry (clamp, rubber-band, momentum
   projection), bilingual search, password hashing, and that every vending node sits on its own building in `map_data.json`.
-* `./gradlew connectedDebugAndroidTest` (phone or emulator attached) — 18 instrumented tests on the real
+* `./gradlew connectedDebugAndroidTest` (phone or emulator attached) — 19 instrumented tests on the real
   SQLite backend (tables, auth, persistence across restarts, escrow expiry after reopen, role mismatch) and
   end-to-end UI flows that tap through every Student and Supplier feature, and real multi-touch on the
   map (double-tap zoom, pinch in/out, pan, an over-the-edge fling that must settle inside the image).
@@ -111,7 +111,7 @@ are illustrations without a path network, so there is no turn-by-turn routing.
   `firebase emulators:start --only auth,firestore --project demo-forestflow`, a demo `app/google-services.json`, and
   `./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.firebaseEmulator=10.0.2.2`.
 
-* `./gradlew connectedReleaseAndroidTest -PtestRelease` — the same 18 instrumented tests against the R8-minified
+* `./gradlew connectedReleaseAndroidTest -PtestRelease` — the same 19 instrumented tests against the R8-minified
   release build (test-only keep rules in `app/proguard-test-rules.pro`).
 
 When running UI tests on a phone, keep the screen unlocked and awake (Developer options ▸ Stay awake).

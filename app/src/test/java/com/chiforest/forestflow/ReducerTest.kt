@@ -76,6 +76,23 @@ class ReducerTest {
         assertTrue(n.effects.any { it is Effect.Log })
     }
 
+    @Test fun each_account_sees_only_its_own_data() {
+        val other = Session("u9", "Other Student", Role.Student, "cas", guest = false)
+        // student redeems, signs out, another account signs in → fresh data, not the first student's
+        val a = fresh().go(Action.Redeem, Action.DoRedeem("d3"), Action.Logout)
+        assertEquals(330, a.customer.points)
+        val b = a.go(Action.LoginSucceeded(other, null, t0))
+        assertEquals(420, b.customer.points)
+        assertEquals("u9", b.ownerUid)
+        // the same account signing back in (no saved copy passed) keeps what is on screen
+        val again = b.go(Action.Logout, Action.LoginSucceeded(other, null, t0))
+        assertEquals(420, again.customer.points)
+        // a saved copy for the account wins
+        val back = again.go(Action.Logout, Action.LoginSucceeded(student, a, t0))
+        assertEquals(330, back.customer.points)
+        assertEquals(student, back.session)
+    }
+
     @Test fun logout_clears_session() = assertNull(fresh().go(Action.Logout).session)
 
     @Test fun reset_restores_seed_but_keeps_session() {

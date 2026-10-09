@@ -130,6 +130,8 @@ sealed interface MapFocus {
 @Serializable
 data class AppState(
     val session: Session? = null,
+    /** Account this data belongs to. Each account keeps its own copy (SQLite `user_state`). */
+    val ownerUid: String? = null,
     val loginRole: Role = Role.Student,
     val agreed: Boolean = false,
     val phone: String = "",
@@ -219,6 +221,7 @@ object Seed {
     /** Port of the prototype's fresh(): the demo state, with an active escrow on Node 01 coil 3. */
     fun fresh(now: Long, session: Session? = null): AppState = AppState(
         session = session,
+        ownerUid = session?.uid,
         loginRole = session?.role ?: Role.Student,
         agreed = session != null,
         customer = CustomerState(

@@ -191,6 +191,37 @@ class BackendTest {
         }
     }
 
+    @Test fun each_account_keeps_its_own_data_across_restarts() {
+        val inst = InstrumentationRegistry.getInstrumentation()
+        val ann = Session("acct-ann", "Ann", Role.Student, "cas", guest = false)
+        val bo = Session("acct-bo", "Bo", Role.Student, "cas", guest = false)
+        val vm = newVm()
+        waitUntil { vm.ready.value }
+        inst.runOnMainSync { vm.signedIn(ann) }
+        waitUntil { vm.state.value.session == ann }
+        inst.runOnMainSync {
+            vm.dispatch(Action.Redeem)
+            vm.dispatch(Action.DoRedeem("d3"))
+            vm.dispatch(Action.Save("N06"))
+        }
+        waitUntil { ForestDatabase(ctx).use { db -> db.loadUserState("acct-ann")?.contains("N06") == true } }
+        inst.runOnMainSync { vm.dispatch(Action.Logout) }
+
+        inst.runOnMainSync { vm.signedIn(bo) }
+        waitUntil { vm.state.value.session == bo }
+        assertEquals(420, vm.state.value.customer.points)       // Bo does not see Ann's points
+        assertFalse("N06" in vm.state.value.savedNodes)
+        inst.runOnMainSync { vm.dispatch(Action.Logout) }
+
+        // "restart" the app, then Ann signs in again and gets her own data back
+        val vm2 = newVm()
+        waitUntil { vm2.ready.value }
+        inst.runOnMainSync { vm2.signedIn(ann) }
+        waitUntil { vm2.state.value.session == ann }
+        assertEquals(330, vm2.state.value.customer.points)
+        assertTrue("N06" in vm2.state.value.savedNodes)
+    }
+
     private fun waitUntil(timeoutMs: Long = 8_000, cond: () -> Boolean) {
         val end = System.currentTimeMillis() + timeoutMs
         while (System.currentTimeMillis() < end) {

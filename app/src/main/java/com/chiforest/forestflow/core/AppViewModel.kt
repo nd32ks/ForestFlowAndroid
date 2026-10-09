@@ -73,7 +73,16 @@ class AppViewModel(private val c: AppContainer) : ViewModel() {
                 .distinctUntilChanged()
                 .drop(1)
                 .conflate() // no debounce: a sign-out is on disk before the user can kill the app
-                .collect { snapshot -> withContext(Dispatchers.IO) { runCatching { c.db.saveState(snapshot, System.currentTimeMillis()) } } }
+                .collect { snapshot ->
+                    val uid = _state.value.session?.uid
+                    withContext(Dispatchers.IO) {
+                        runCatching {
+                            val t = System.currentTimeMillis()
+                            c.db.saveState(snapshot, t)
+                            if (uid != null) c.db.saveUserState(uid, snapshot, t)
+                        }
+                    }
+                }
         }
     }
 
@@ -94,7 +103,12 @@ class AppViewModel(private val c: AppContainer) : ViewModel() {
                     "sms" -> "Mobile ${Reducer.maskPhone(_state.value.phone)}"
                     else -> if (effect.role == Role.Student) "Campus Visitor" else "Visiting Staff"
                 }
-                dispatch(Action.LoginSucceeded(Session("guest-${effect.method}-${System.currentTimeMillis()}", name, effect.role, effect.method)))
+                // stable guest ids, so the same guest on this phone gets their data back
+                val id = when (effect.method) {
+                    "sms" -> "guest-sms-${_state.value.phone}-${effect.role.name}"
+                    else -> "guest-${effect.method}-${effect.role.name}"
+                }
+                signedIn(Session(id, name, effect.role, effect.method))
             }
             Effect.ScheduleAutofill -> viewModelScope.launch {
                 delay(900)
@@ -111,6 +125,18 @@ class AppViewModel(private val c: AppContainer) : ViewModel() {
                 }
             }
             else -> _effects.tryEmit(effect)
+        }
+    }
+
+    /** Loads this account's own saved data (if any) and enters the app with it. */
+    fun signedIn(session: Session) {
+        viewModelScope.launch {
+            val saved = withContext(Dispatchers.IO) {
+                runCatching { c.db.loadUserState(session.uid) }.getOrNull()
+                    ?.let { runCatching { json.decodeFromString(AppState.serializer(), it) }.getOrNull() }
+            }
+            dispatch(Action.LoginSucceeded(session, saved, System.currentTimeMillis()))
+            dispatch(Action.Tick(System.currentTimeMillis())) // an escrow saved earlier may have lapsed
         }
     }
 
@@ -138,7 +164,7 @@ class AppViewModel(private val c: AppContainer) : ViewModel() {
                     dispatch(Action.CasFailed("This is a ${r.session.role.name} account · switch to the ${r.session.role.name} tab"))
                 } else {
                     delay(250)
-                    dispatch(Action.LoginSucceeded(r.session))
+                    signedIn(r.session)
                 }
             }
         }
