@@ -339,4 +339,38 @@ class AppFlowTest {
         tap("Clearance", substring = true)
         see("Clearance −20% Approved")
     }
+
+    /** Share leaves the app (system share sheet), so the outgoing intent itself is captured and checked. */
+    @Test fun share_sends_station_text_and_link() {
+        androidx.test.espresso.intent.Intents.init()
+        try {
+            androidx.test.espresso.intent.Intents.intending(
+                androidx.test.espresso.intent.matcher.IntentMatchers.hasAction(android.content.Intent.ACTION_CHOOSER),
+            ).respondWith(android.app.Instrumentation.ActivityResult(android.app.Activity.RESULT_OK, null))
+            agreeAndLogin(supplier = false)
+            see("TRAY COIL INVENTORY")
+            tap("Share")
+            androidx.test.espresso.intent.Intents.intended(
+                org.hamcrest.Matchers.allOf(
+                    androidx.test.espresso.intent.matcher.IntentMatchers.hasAction(android.content.Intent.ACTION_CHOOSER),
+                    androidx.test.espresso.intent.matcher.IntentMatchers.hasExtra(
+                        org.hamcrest.Matchers.equalTo(android.content.Intent.EXTRA_INTENT),
+                        org.hamcrest.Matchers.allOf(
+                            androidx.test.espresso.intent.matcher.IntentMatchers.hasAction(android.content.Intent.ACTION_SEND),
+                            androidx.test.espresso.intent.matcher.IntentMatchers.hasType("text/plain"),
+                            androidx.test.espresso.intent.matcher.IntentMatchers.hasExtra(
+                                org.hamcrest.Matchers.equalTo(android.content.Intent.EXTRA_TEXT),
+                                org.hamcrest.Matchers.allOf(
+                                    org.hamcrest.Matchers.containsString("Chi Forest Smart Node 01"),
+                                    org.hamcrest.Matchers.containsString("chiforest://node/N01"),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            )
+        } finally {
+            androidx.test.espresso.intent.Intents.release()
+        }
+    }
 }
