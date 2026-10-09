@@ -31,6 +31,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (project.hasProperty("testRelease")) proguardFiles("proguard-test-rules.pro")
             // Signed with the debug key so the release APK installs on a phone for demos.
             signingConfig = signingConfigs.getByName("debug")
         }
@@ -43,6 +44,8 @@ android {
         compose = true
         buildConfig = true
     }
+    // `./gradlew connectedReleaseAndroidTest -PtestRelease` runs the instrumented suite on the R8-minified release build.
+    if (project.hasProperty("testRelease")) testBuildType = "release"
     testOptions {
         execution = "ANDROIDX_TEST_ORCHESTRATOR"
         animationsDisabled = true
