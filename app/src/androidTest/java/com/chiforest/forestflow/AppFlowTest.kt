@@ -249,4 +249,94 @@ class AppFlowTest {
         nav("Telemetry")
         see("0 cans left · 18 queued · Depleted at 13:41", substring = true)
     }
+
+    @Test fun student_secondary_actions() {
+        agreeAndLogin(supplier = false)
+        see("TRAY COIL INVENTORY")
+
+        // Inventory: Route and coil Navigate both open the map on the active node
+        tap("Route")
+        see("You're already at Node 01")
+        see("Chi Forest Smart Node 01")
+        nav("Inventory")
+        tap("Navigate")
+        see("Coil #01 · Node 01 highlighted on map")
+
+        // Map: pin tap, building filter sheet, layers with labels, stations list
+        tap("Node 05,", substring = true)
+        see("Chi Forest Smart Node 05")
+        tap("Bldg …")
+        see("Buildings")
+        tap("Bldg A · A栋")
+        see("Bldg A")
+        tap("All Stations (6)", substring = true)
+        tap("Map layers")
+        tap("Entrances")
+        tap("Points of interest")
+        tap("Close")
+        see("East Gate 东门")
+        see("Mini Hub · 西浦小屋")
+        rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Search nodes or buildings")).onFirst().performTextInput("node")
+        tap("All stations list")
+        see("All Stations")
+        tap("Node 09 · FB Atrium")
+        see("Chi Forest Smart Node 09")
+
+        // Notifications: switches, preferences, unsubscribe → empty state, hold & re-order
+        nav("Notifications")
+        tap("Push App Alert")
+        see("App alerts off")
+        tap("SMS Drop")
+        see("SMS drop alerts on")
+        tap("Quiet Campus Hours")
+        tap("Unsubscribe")
+        see("No restock alerts yet")
+        tap("Navigate & Hold")
+        see("Routing to Node 02")
+        see("Chi Forest Smart Node 02")
+        nav("Notifications")
+        tap("Re-order Now")
+        see("You already hold a coil")
+        see("TIME REMAINING TO CLAIM")
+
+        // VIP: enlarge QR, then release the escrow and see the empty state
+        tap("QR code for chiforest://escrow", substring = true)
+        see("Scan at the machine")
+        tap("Close")
+        nav("Inventory")
+        tap("Release")
+        nav("VIP Pass")
+        see("No active escrow")
+        nav("Notifications")
+        tap("Re-order Now")
+        see("Re-ordered · Coil #03 locked for you")
+        see("TIME REMAINING TO CLAIM")
+
+        // Sign out, then the Visitor path
+        tap("Profile")
+        tap("Sign out")
+        tap("我已阅读", substring = true)
+        tap("访客 / 教职工")
+        see("Welcome, Campus Visitor", substring = true)
+    }
+
+    @Test fun supplier_secondary_actions() {
+        agreeAndLogin(supplier = true)
+        see("Coil Tray Matrix")
+        nav("Dispatch")
+        tap("Ping")
+        see("Zhang pinged", substring = true)
+        see("En Route")
+        tap("Dismiss")
+        gone("DYNAMIC CLEARANCE TRIGGERED")
+        nav("Alerts")
+        tap("Ping Runner")
+        see("Runner Zhang pinged")
+        see("Runner Pinged")
+        tap("Stockouts", substring = true)
+        see("Coil C3 Empty")
+        gone("VIP Escrow")
+        tap("Clearance", substring = true)
+        see("Clearance −20% Approved")
+    }
 }

@@ -8,7 +8,7 @@ Unit tests: `app/src/test/.../ReducerTest.kt` (R), `MapTest.kt` (M). Instrumente
 | agree | `Agree` | LoginScreen agreement row | R `agree_toggles`, UI `agreeAndLogin` |
 | getCode | `GetCode`, `CodeAutofill` | LoginScreen 获取验证码 | R `getCode_starts_countdown_and_autofill`, UI `sms_login_validation_and_code_flow` |
 | login(wechat\|sms\|cas) | `Login` → `LoginSucceeded` / `CasFailed` | WeChat button, Sign In, CAS tile + CasSheet | R `sms_validates_phone_then_code`, `cas_opens_sheet`, `loginSucceeded_enters_role_and_logs`; B `cas_role_mismatch_is_rejected`; UI `cas_login_with_database_account` |
-| visitor | `Visitor` | Visitor tile | R `visitor_requires_agreement` |
+| visitor | `Visitor` | Visitor tile | R `visitor_requires_agreement`, UI `student_secondary_actions` |
 | tab | `Tab` | GlassNavBar | R `tab_changes_and_alerts_tab_clears_badge`, UI flows |
 | profile | `Profile` | GlassHeader avatar | R `profile_opens_sheet`, UI flows |
 | logout | `Logout` | Profile sheet | R `logout_clears_session`, UI `student_full_flow` |
@@ -31,15 +31,15 @@ Unit tests: `app/src/test/.../ReducerTest.kt` (R), `MapTest.kt` (M). Instrumente
 | nf | `Nf` | Notifications chips | R `nf_readAll_dismiss_unread`, UI student |
 | readAll | `ReadAll` | Notifications "Mark All Read" | R `nf_readAll_dismiss_unread`, UI student |
 | liveStatus | `LiveStatus` | Osmanthus watch card | R `liveStatus_toasts`, UI student |
-| unsub | `Unsub` | Watch cards | R `unsub_and_alert_switches` |
+| unsub | `Unsub` | Watch cards | R `unsub_and_alert_switches`, UI `student_secondary_actions` |
 | pushAlert | `PushAlert` | White Peach card switch | R `unsub_and_alert_switches` |
 | smsAlert | `SmsAlert` | White Peach card switch | R `unsub_and_alert_switches` |
-| holdNav | `HoldNav` | Urgent drop "Navigate & Hold" | R `holdNav_opens_map_on_node_02` |
+| holdNav | `HoldNav` | Urgent drop "Navigate & Hold" | R `holdNav_opens_map_on_node_02`, UI `student_secondary_actions` |
 | dismiss | `Dismiss` | Feed cards | R `nf_readAll_dismiss_unread`, UI student |
-| reorder | `Reorder` | Escrow timeout "Re-order Now" | R `reorder_creates_escrow_and_opens_vip` |
+| reorder | `Reorder` | Escrow timeout "Re-order Now" | R `reorder_creates_escrow_and_opens_vip`, UI `student_secondary_actions` |
 | pref(push\|sound\|quiet) | `Pref` | Alert preferences | R `prefs_toggle` |
 | copyCode | `CopyCode` | VIP "COPY" | R `copyCode_and_qr`, UI student |
-| qr | `Qr` | Tap the QR | R `copyCode_and_qr` |
+| qr | `Qr` | Tap the QR | R `copyCode_and_qr`, UI `student_secondary_actions` |
 | redeem / doRedeem | `Redeem`, `DoRedeem` | VIP button / Redeem sheet | R `redeem_deducts_points_once`, UI student |
 | coil | `SelectCoil` | Telemetry matrix | R `coil_select_and_restock_c3_clears_queue`, UI supplier |
 | restockCoil | `RestockCoil` | Telemetry selected strip | same, UI supplier |
@@ -49,7 +49,7 @@ Unit tests: `app/src/test/.../ReducerTest.kt` (R), `MapTest.kt` (M). Instrumente
 | approve / decline | `Approve`, `Decline` | Dispatch clearance card | R `approve_and_decline_clearance`, UI supplier |
 | surge | `Surge` | Dispatch simulation card | R `surge_updates_metrics`, UI supplier |
 | confirmRestock | `ConfirmRestock` | Dispatch primary CTA | R `confirmRestock_fills_everything_once`, UI supplier |
-| ping | `Ping` | Alerts urgent card | R `alerts_ping_filter_mute` |
+| ping | `Ping` | Alerts urgent card | R `alerts_ping_filter_mute`, UI `supplier_secondary_actions` |
 | alertFilter | `AlertFilter` | Alerts chips | R `alerts_ping_filter_mute`, UI supplier |
 | mute | `Mute` | Alerts gateway switch | R `alerts_ping_filter_mute`, UI supplier |
 | (timer) | `Tick` | ViewModel 1 s ticker | R `escrow_expires_on_tick`, B `state_persists_across_restart_and_escrow_expires_after_reopen` |
