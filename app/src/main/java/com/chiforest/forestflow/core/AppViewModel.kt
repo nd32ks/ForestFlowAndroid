@@ -25,7 +25,7 @@ import java.util.Locale
 
 /** Single source of truth: StateFlow<AppState> + SharedFlow<Effect>, persisted to SQLite on every change. */
 class AppViewModel(private val c: AppContainer) : ViewModel() {
-    private val reducer = Reducer(c.mapData)
+    private val reducer = Reducer(c.mapData, seedEscrow = Features.vipClub)
     val mapData: MapData get() = c.mapData
     val authBackend: String get() = c.auth.backendName
 
@@ -52,7 +52,7 @@ class AppViewModel(private val c: AppContainer) : ViewModel() {
             val restored = withContext(Dispatchers.IO) {
                 runCatching { c.db.loadState() }.getOrNull()?.let { runCatching { json.decodeFromString(AppState.serializer(), it) }.getOrNull() }
             }
-            _state.value = restored ?: Seed.fresh(System.currentTimeMillis())
+            _state.value = (restored ?: Seed.fresh(System.currentTimeMillis(), escrow = Features.vipClub)).hideOffFeatures()
             _ready.value = true
             dispatch(Action.Tick(System.currentTimeMillis())) // expire escrows that lapsed while closed
             persist()
@@ -67,6 +67,10 @@ class AppViewModel(private val c: AppContainer) : ViewModel() {
             }
         }
     }
+
+    /** State saved while a feature was on may reference it: drop what the hidden features own (hold) so nothing stray shows. */
+    private fun AppState.hideOffFeatures(): AppState =
+        if (!Features.vipClub && customer.escrow != null) copy(customer = customer.copy(escrow = null)) else this
 
     private fun persist() {
         viewModelScope.launch {
@@ -172,7 +176,7 @@ class AppViewModel(private val c: AppContainer) : ViewModel() {
                 null
             }
             val chosen = if (remote != null && (local == null || remote.clientTs > local.second)) remote.json else local?.first
-            val saved = chosen?.let { runCatching { json.decodeFromString(AppState.serializer(), it) }.getOrNull() }
+            val saved = chosen?.let { runCatching { json.decodeFromString(AppState.serializer(), it) }.getOrNull() }?.hideOffFeatures()
             dispatch(Action.LoginSucceeded(session, saved, System.currentTimeMillis()))
             dispatch(Action.Tick(System.currentTimeMillis())) // an escrow saved earlier may have lapsed
         }

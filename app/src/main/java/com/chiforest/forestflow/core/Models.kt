@@ -165,7 +165,12 @@ data class AppState(
     @Transient val pulseBuilding: String? = null,
 ) {
     /** Unread = feed cards that are neither read nor dismissed. */
-    val unread: Int get() = Seed.notificationIds.count { it !in customer.read && it !in customer.dismissed }
+    val unread: Int get() = unread(vip = true)
+
+    /** Unread count over the cards that are actually shown (the VIP cards are hidden when the VIP club is off). */
+    fun unread(vip: Boolean): Int =
+        (if (vip) Seed.notificationIds else Seed.notificationIds.filter { it == "urgent" })
+            .count { it !in customer.read && it !in customer.dismissed }
 
     fun codeLeftSec(now: Long): Int =
         if (codeSentAt == 0L) 0 else (60 - ((now - codeSentAt) / 1000).toInt()).coerceAtLeast(0)
@@ -219,13 +224,14 @@ object Seed {
     )
 
     /** Port of the prototype's fresh(): the demo state, with an active escrow on Node 01 coil 3. */
-    fun fresh(now: Long, session: Session? = null): AppState = AppState(
+    fun fresh(now: Long, session: Session? = null, escrow: Boolean = true): AppState = AppState(
         session = session,
         ownerUid = session?.uid,
         loginRole = session?.role ?: Role.Student,
         agreed = session != null,
         customer = CustomerState(
-            escrow = Escrow("N01", 3, "Calamansi Lime", now, now + Escrow.CLAIM_MS),
+            // the seeded 10-minute hold belongs to the VIP club: no hold (and no expiry toast) when that is hidden
+            escrow = if (escrow) Escrow("N01", 3, "Calamansi Lime", now, now + Escrow.CLAIM_MS) else null,
         ),
     )
 }

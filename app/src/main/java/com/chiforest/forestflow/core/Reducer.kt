@@ -7,7 +7,7 @@ data class Next(val state: AppState, val effects: List<Effect> = emptyList())
  * Pure state machine. No Android, no clocks: time arrives inside actions.
  * Mirrors the prototype's act() switch one case per action.
  */
-class Reducer(private val map: MapData) {
+class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) {
 
     fun reduce(s: AppState, a: Action): Next = when (a) {
         // ---------------- Login ----------------
@@ -34,7 +34,7 @@ class Reducer(private val map: MapData) {
             val base = when {
                 a.restored != null -> a.restored
                 s.ownerUid == a.session.uid -> s
-                else -> Seed.fresh(a.now)
+                else -> Seed.fresh(a.now, escrow = seedEscrow)
             }
             Next(
                 base.copy(
@@ -66,7 +66,7 @@ class Reducer(private val map: MapData) {
             listOf(Effect.SignOut, Effect.Toast("Signed out", ToastIcon.Check), Effect.Log("logout", s.session?.displayName ?: "")),
         )
         is Action.Reset -> Next(
-            Seed.fresh(a.now, s.session).copy(campusId = s.campusId),
+            Seed.fresh(a.now, s.session, seedEscrow).copy(campusId = s.campusId),
             listOf(Effect.Toast("Demo data reset", ToastIcon.Check), Effect.Haptic(), Effect.Log("reset", "fresh()")),
         )
         is Action.Tick -> tick(s, a.now)

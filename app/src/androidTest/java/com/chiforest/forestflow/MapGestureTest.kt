@@ -36,6 +36,7 @@ class MapGestureTest {
     private lateinit var scenario: ActivityScenario<MainActivity>
 
     @Before fun launch() {
+        org.junit.Assume.assumeTrue("map is switched off in the demo scope", BuildConfig.FEATURE_CAMPUS_MAP)
         MainActivity.resetContainer()
         ctx.deleteDatabase(ForestDatabase.NAME)
         scenario = ActivityScenario.launch(MainActivity::class.java)
@@ -49,7 +50,7 @@ class MapGestureTest {
     }
 
     @After fun close() {
-        scenario.close()
+        if (::scenario.isInitialized) scenario.close()
         MainActivity.resetContainer()
         ctx.deleteDatabase(ForestDatabase.NAME)
     }

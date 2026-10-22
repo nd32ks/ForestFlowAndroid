@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chiforest.forestflow.core.Action
 import com.chiforest.forestflow.core.AppState
+import com.chiforest.forestflow.core.Features
 import com.chiforest.forestflow.core.MapData
 import com.chiforest.forestflow.core.Product
 import com.chiforest.forestflow.core.Seed
@@ -75,9 +76,14 @@ fun InventoryScreen(s: AppState, now: Long, map: MapData, dispatch: (Action) -> 
             }
             Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                QuickAction(Ic.Route, "Route", Modifier.weight(1f)) { dispatch(Action.Quick("Route", System.currentTimeMillis())) }
-                QuickAction(Ic.MapPin, "I'm Here", Modifier.weight(1f), active = s.youAreHereNodeId == node.id) { dispatch(Action.Quick("I'm Here", System.currentTimeMillis())) }
-                QuickAction(Ic.Lock, "Lock", Modifier.weight(1f), active = s.customer.escrow != null) { dispatch(Action.Quick("Lock", System.currentTimeMillis())) }
+                if (Features.campusMap) {
+                    QuickAction(Ic.Route, "Route", Modifier.weight(1f)) { dispatch(Action.Quick("Route", System.currentTimeMillis())) }
+                    QuickAction(Ic.MapPin, "I'm Here", Modifier.weight(1f), active = s.youAreHereNodeId == node.id) { dispatch(Action.Quick("I'm Here", System.currentTimeMillis())) }
+                }
+                if (Features.vipClub) {
+                    QuickAction(Ic.Lock, "Lock", Modifier.weight(1f), active = s.customer.escrow != null) { dispatch(Action.Quick("Lock", System.currentTimeMillis())) }
+                }
+                QuickAction(Ic.Bell, "Alerts", Modifier.weight(1f)) { dispatch(Action.Tab(2)) }
                 QuickAction(Ic.Share, "Share", Modifier.weight(1f)) { dispatch(Action.Quick("Share", System.currentTimeMillis())) }
             }
         }
@@ -102,7 +108,7 @@ fun InventoryScreen(s: AppState, now: Long, map: MapData, dispatch: (Action) -> 
         }
 
         AnimatedVisibility(
-            s.customer.escrow != null,
+            Features.vipClub && s.customer.escrow != null,
             enter = slideInVertically { it / 2 } + fadeIn(),
             exit = slideOutVertically { it / 2 } + fadeOut(),
         ) {
@@ -176,7 +182,9 @@ private fun CoilCard(p: Product, count: Int, watching: Boolean, modifier: Modifi
                 else p.tags.forEach { Pill(it, c.muted, c.surface2) }
             }
             Spacer(Modifier.height(10.dp))
-            if (out && p.key != "Osmanthus") {
+            if (out && p.key != "Osmanthus" && !Features.campusMap) {
+                // no station list without the map: the RESTOCKING pill above says it all
+            } else if (out && p.key != "Osmanthus") {
                 ForestButton(
                     "Other Nodes", { dispatch(Action.OpenSheet(SheetKind.Stations)) }, Modifier.fillMaxWidth(),
                     small = true, style = BtnStyle.Outline, icon = Ic.Vending,
@@ -186,8 +194,10 @@ private fun CoilCard(p: Product, count: Int, watching: Boolean, modifier: Modifi
                     if (watching) "Subscribed" else "Notify Me", { dispatch(Action.Notify) }, Modifier.fillMaxWidth(),
                     small = true, style = if (watching) BtnStyle.Green else BtnStyle.Tonal, icon = if (watching) Ic.Check else Ic.Bell,
                 )
-            } else {
+            } else if (Features.campusMap) {
                 ForestButton("Navigate", { dispatch(Action.CoilNav(p.coil)) }, Modifier.fillMaxWidth(), small = true, style = BtnStyle.Outline, icon = Ic.Navigation)
+            } else {
+                Pill("Ready to dispense", c.green, c.greenTint, icon = Ic.Check)
             }
         }
     }

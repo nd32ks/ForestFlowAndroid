@@ -24,13 +24,39 @@ Package name: `forest.flow`.
 
 Requirements: Android 8.0 (API 26) or newer. Android Studio 2026.1 or newer (uses its bundled JDK 21).
 
+## Demo scope: login + two features (the rest is hidden)
+
+This build shows the **login page** and **two features**; everything else is built, tested and hidden behind a switch.
+
+| Shown now | What the user sees |
+|---|---|
+| Login | Student / Supplier, WeChat, SMS code, XJTLU CAS (real accounts), Visitor |
+| **Feature 1: AI stock prediction and dispatch** (supplier) | Telemetry (coil matrix, AI Predictive Restock), Dispatch (pipeline, runner, manifest, surge, confirm restock), Alerts |
+| **Feature 2: restock radar and Notify Me** (student) | Inventory (live stock, *Notify Me*), Notifications (watchlist, drop alerts, preferences) |
+
+| Hidden for now | Switch |
+|---|---|
+| **Feature 3: VIP club**: VIP Pass tab, 10-minute escrow (Lock / Release / QR), points and redeem, the escrow and VIP cards in Notifications | `vip` |
+| **Campus map**: Campus Map tab, Route / Navigate / I'm Here, directions, station list | `map` |
+
+**To bring a feature out**, add one line to `local.properties` and press Run again (nothing else changes):
+
+```properties
+features=vip          # the VIP club (Feature 3)
+features=vip,map      # VIP club + campus map
+features=all          # everything
+```
+
+(or build with `-Pfeatures=all`, or set `FF_FEATURES`). Remove the line to hide them again. Use **Profile ▸ Reset demo data**
+after switching VIP on so the seeded 10-minute hold appears.
+
 ## Demo logins
 
 | Path | How |
 |---|---|
 | WeChat one-tap | Tick the agreement, tap the green WeChat button (demo guest session) |
 | SMS | Any valid mainland number (e.g. `13800138000`) → **获取验证码** → code `482915` auto-fills → Sign In |
-| **XJTLU CAS (real accounts: Supabase, or SQLite offline)** | `student@xjtlu.test` / `forest123` (Student) · `supplier@xjtlu.test` / `forest123` (Supplier). Or tap *Create account* |
+| **XJTLU CAS (real accounts: Supabase, or SQLite offline)** | `student@example.com` / `forest123` (Student) · `supplier@example.com` / `forest123` (Supplier). Or tap *Create account* |
 | Visitor | Visitor tile (demo guest session) |
 
 Choose **Student** or **Supplier** with the switch at the top of the login screen first. A CAS account only
@@ -110,9 +136,9 @@ are illustrations without a path network, so there is no turn-by-turn routing.
 
 ## Tests
 
-* `./gradlew test` — 73 JVM tests: every reducer action, map geometry (clamp, rubber-band, momentum
+* `./gradlew test` — 77 JVM tests: every reducer action, map geometry (clamp, rubber-band, momentum
   projection), bilingual search, password hashing, and that every vending node sits on its own building in `map_data.json`.
-* `./gradlew connectedDebugAndroidTest` (phone or emulator attached) — 15 instrumented tests (+3 cloud tests when Supabase is configured) on the real
+* `./gradlew connectedDebugAndroidTest` (phone or emulator attached) — instrumented tests (the demo scope runs the demo-scope test; `-Pfeatures=all` runs the full-app flows and the map gestures; the 3 cloud tests need Supabase) on the real
   SQLite backend (tables, auth, persistence across restarts, escrow expiry after reopen, role mismatch) and
   end-to-end UI flows that tap through every Student and Supplier feature, and real multi-touch on the
   map (double-tap zoom, pinch in/out, pan, an over-the-edge fling that must settle inside the image).

@@ -8,6 +8,7 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
@@ -16,7 +17,9 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.chiforest.forestflow.core.ForestDatabase
+import com.chiforest.forestflow.BuildConfig
 import org.junit.After
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -129,6 +132,7 @@ class AppFlowTest {
     }
 
     @Test fun student_full_flow() {
+        assumeTrue("needs every feature switched on", BuildConfig.FEATURE_VIP_CLUB && BuildConfig.FEATURE_CAMPUS_MAP)
         agreeAndLogin(supplier = false)
         see("TRAY COIL INVENTORY")
 
@@ -251,6 +255,7 @@ class AppFlowTest {
     }
 
     @Test fun student_secondary_actions() {
+        assumeTrue("needs every feature switched on", BuildConfig.FEATURE_VIP_CLUB && BuildConfig.FEATURE_CAMPUS_MAP)
         agreeAndLogin(supplier = false)
         see("TRAY COIL INVENTORY")
 
@@ -372,5 +377,41 @@ class AppFlowTest {
         } finally {
             androidx.test.espresso.intent.Intents.release()
         }
+    }
+
+    /** The demo build: login page + Feature 1 (supplier) + Feature 2 (student restock radar); the rest is hidden. */
+    @Test fun demo_scope_shows_login_and_two_features_only() {
+        assumeTrue("demo scope only", !BuildConfig.FEATURE_VIP_CLUB && !BuildConfig.FEATURE_CAMPUS_MAP)
+        agreeAndLogin(supplier = false)
+        see("TRAY COIL INVENTORY")
+        // student navigation: Inventory + Notifications only
+        rule.onAllNodes(hasContentDescription("Inventory", substring = true).and(androidx.compose.ui.test.hasClickAction())).assertCountEquals(1)
+        rule.onAllNodes(hasContentDescription("Notifications", substring = true).and(androidx.compose.ui.test.hasClickAction())).assertCountEquals(1)
+        rule.onAllNodes(hasContentDescription("VIP Pass")).assertCountEquals(0)
+        rule.onAllNodes(hasContentDescription("Campus Map")).assertCountEquals(0)
+        // no map, escrow or VIP controls on the inventory
+        gone("Route"); gone("I'm Here"); gone("Lock"); gone("Navigate"); gone("Other Nodes"); gone("1 Lock in Escrow")
+        // Feature 2: Notify Me works
+        tap("Notify Me")
+        see("Subscribed")
+        nav("Notifications")
+        see("Restock & Drops")
+        see("URGENT DROP ALERT")
+        see("Osmanthus Plum Sparkling")
+        gone("Escrow & Drops"); gone("VIP Privileges"); gone("ESCROW TIMEOUT"); gone("CAMPUS PASS PERKS"); gone("Navigate & Hold")
+        tap("Unsubscribe")
+        tap("Mark All Read")
+        see("All caught up")
+        // Feature 1: the supplier still has all three tabs
+        tap("Profile")
+        tap("Sign out")
+        tap("补货供货商 Supplier")
+        tap("我已阅读", substring = true)
+        tap("微信登录 · Supplier WeChat")
+        see("Coil Tray Matrix")
+        nav("Dispatch")
+        see("Node 01 Restock Routine")
+        nav("Alerts")
+        see("Live Alert Gateway")
     }
 }

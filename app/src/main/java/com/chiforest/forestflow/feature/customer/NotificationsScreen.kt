@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chiforest.forestflow.core.Action
 import com.chiforest.forestflow.core.AppState
+import com.chiforest.forestflow.core.Features
 import com.chiforest.forestflow.feature.ScreenColumn
 import com.chiforest.forestflow.ui.components.BtnStyle
 import com.chiforest.forestflow.ui.components.Chip
@@ -61,8 +62,10 @@ import com.chiforest.forestflow.ui.theme.Type
 fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
     val c = FF.c
     val cu = s.customer
-    val nf = cu.nf
-    val unread = s.unread
+    val vip = Features.vipClub
+    // a filter saved while the VIP club was on may no longer exist
+    val nf = if (!vip && cu.nf in listOf("escrow", "vip")) "all" else cu.nf
+    val unread = s.unread(vip)
     val slide = with(LocalDensity.current) { 40.dp.roundToPx() }
     val exit = slideOutHorizontally { slide } + fadeOut() + shrinkVertically()
     ScreenColumn {
@@ -72,8 +75,10 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Chip(if (unread > 0) "All · $unread" else "All", nf == "all", { dispatch(Action.Nf("all")) })
             Chip("Restocks", nf == "restocks", { dispatch(Action.Nf("restocks")) }, icon = Ic.Box)
-            Chip("Escrow & Drops", nf == "escrow", { dispatch(Action.Nf("escrow")) }, icon = Ic.Lock)
-            Chip("VIP Privileges", nf == "vip", { dispatch(Action.Nf("vip")) }, icon = Ic.Star)
+            if (vip) {
+                Chip("Escrow & Drops", nf == "escrow", { dispatch(Action.Nf("escrow")) }, icon = Ic.Lock)
+                Chip("VIP Privileges", nf == "vip", { dispatch(Action.Nf("vip")) }, icon = Ic.Star)
+            }
         }
 
         // ---------------- watchlist
@@ -119,8 +124,8 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
 
         // ---------------- live feed
         val showUrgent = (nf == "all" || nf == "escrow") && "urgent" !in cu.dismissed
-        val showTimeout = (nf == "all" || nf == "escrow") && "timeout" !in cu.dismissed
-        val showPerks = (nf == "all" || nf == "vip") && "perks" !in cu.dismissed
+        val showTimeout = vip && (nf == "all" || nf == "escrow") && "timeout" !in cu.dismissed
+        val showPerks = vip && (nf == "all" || nf == "vip") && "perks" !in cu.dismissed
         if (nf != "restocks") {
             Eyebrow("Live Campus Activity") { Text("Past 2 hours", style = Type.body(11.sp, 600), color = c.faint) }
         }
@@ -140,8 +145,12 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
                 )
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ForestButton("Navigate & Hold", { dispatch(Action.HoldNav(System.currentTimeMillis())) }, Modifier.weight(1f), small = true, icon = Ic.Navigation)
-                    ForestButton("Dismiss", { dispatch(Action.Dismiss("urgent")) }, small = true, style = BtnStyle.Outline)
+                    if (vip && Features.campusMap) {
+                        ForestButton("Navigate & Hold", { dispatch(Action.HoldNav(System.currentTimeMillis())) }, Modifier.weight(1f), small = true, icon = Ic.Navigation)
+                        ForestButton("Dismiss", { dispatch(Action.Dismiss("urgent")) }, small = true, style = BtnStyle.Outline)
+                    } else {
+                        ForestButton("Dismiss", { dispatch(Action.Dismiss("urgent")) }, Modifier.weight(1f), small = true, style = BtnStyle.Outline)
+                    }
                 }
             }
         }

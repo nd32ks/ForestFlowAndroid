@@ -152,7 +152,7 @@ class BackendTest {
     }
 
     @Test fun cas_role_mismatch_is_rejected() {
-        val opsEmail = "ops${System.currentTimeMillis()}@xjtlu.test"
+        val opsEmail = "ops${System.currentTimeMillis()}@example.com"
         val inst = InstrumentationRegistry.getInstrumentation()
         val vm: AppViewModel? = newVm()
         waitUntil { vm!!.ready.value }

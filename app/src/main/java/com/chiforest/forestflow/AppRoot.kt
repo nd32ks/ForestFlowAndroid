@@ -52,6 +52,7 @@ import com.chiforest.forestflow.core.Action
 import com.chiforest.forestflow.core.AppState
 import com.chiforest.forestflow.core.AppViewModel
 import com.chiforest.forestflow.core.Effect
+import com.chiforest.forestflow.core.Features
 import com.chiforest.forestflow.core.LogRow
 import com.chiforest.forestflow.core.Role
 import com.chiforest.forestflow.core.SheetKind
@@ -170,7 +171,9 @@ private fun RoleShell(s: AppState, now: Long, role: Role, vm: AppViewModel, disp
     val haze = rememberHazeState()
     val map = vm.mapData
     val student = role == Role.Student
-    val tab = if (student) s.customerTab else s.supplierTab
+    // Hidden features drop out of the student tabs; a tab id saved earlier falls back to the first visible one.
+    val studentTabs = Features.studentTabs()
+    val tab = if (student) Features.effectiveStudentTab(s.customerTab) else s.supplierTab
     val slidePx = with(LocalDensity.current) { Motion.TabSlide.roundToPx() }
     val imeVisible = WindowInsets.isImeVisible
 
@@ -222,17 +225,20 @@ private fun RoleShell(s: AppState, now: Long, role: Role, vm: AppViewModel, disp
             exit = slideOutVertically { (it * 1.2f).toInt() } + fadeOut(),
         ) {
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
-                val items = if (student) listOf(
-                    NavItem(Ic.Box, "Inventory"),
-                    NavItem(Ic.Navigation, "Campus Map"),
-                    NavItem(Ic.Bell, "Notifications", dot = s.unread > 0),
-                    NavItem(Ic.IdCard, "VIP Pass"),
-                ) else listOf(
+                val items = if (student) studentTabs.map { id ->
+                    when (id) {
+                        0 -> NavItem(Ic.Box, "Inventory")
+                        1 -> NavItem(Ic.Navigation, "Campus Map")
+                        2 -> NavItem(Ic.Bell, "Notifications", dot = s.unread(Features.vipClub) > 0)
+                        else -> NavItem(Ic.IdCard, "VIP Pass")
+                    }
+                } else listOf(
                     NavItem(Ic.BarChart, "Telemetry"),
                     NavItem(Ic.Truck, "Dispatch"),
                     NavItem(Ic.Bell, "Alerts", count = s.aBadge),
                 )
-                GlassNavBar(haze, items, tab, { dispatch(Action.Tab(it)) })
+                val selected = if (student) studentTabs.indexOf(tab).coerceAtLeast(0) else tab
+                GlassNavBar(haze, items, selected, { i -> dispatch(Action.Tab(if (student) studentTabs[i] else i)) })
             }
         }
     }

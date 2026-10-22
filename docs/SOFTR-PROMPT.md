@@ -24,7 +24,7 @@ LOGIN AND ROLES
 - Student sees only "Station" (read-only coil cards: product, "X left", status pill; empty = "Out of stock - restocking").
 - Supplier sees "Telemetry", "Dispatch", "Alerts". Wrong role = "You do not have access", no data shown.
 - Redirect after sign-in: Student to Station, Supplier to Telemetry. Sign-out button in the top bar.
-- Demo users only: student@xjtlu.test and supplier@xjtlu.test.
+- Demo users only: student@example.com and supplier@example.com.
 
 FEATURE 1 (Supplier)
 - Telemetry: KPI tiles (Dispensed today, Network fill % = average Fill %, Next surge 13:50); 4x4 coil matrix coloured by State

@@ -16,6 +16,13 @@ val supabaseProps = Properties().apply {
 }
 fun supabaseSetting(key: String, env: String): String = (supabaseProps.getProperty(key) ?: System.getenv(env) ?: "").trim()
 
+// Which later features are switched on. Demo scope = login + Feature 1 + Feature 2 only (nothing listed).
+// To bring features out, put e.g.  features=vip  or  features=vip,map  or  features=all  in local.properties,
+// or pass -Pfeatures=all on the command line (or set FF_FEATURES). vip = VIP pass, escrow and points; map = campus map.
+val enabledFeatures: Set<String> = ((project.findProperty("features") as String?) ?: supabaseSetting("features", "FF_FEATURES"))
+    .split(",").map { it.trim().lowercase() }.filter { it.isNotEmpty() }.toSet()
+fun featureOn(name: String) = "all" in enabledFeatures || name in enabledFeatures
+
 android {
     namespace = "com.chiforest.forestflow"
     compileSdk = 37
@@ -31,6 +38,8 @@ android {
         testInstrumentationRunnerArguments["clearPackageData"] = "true"
         // -PfakeCloud: let the app talk plain HTTP (to tools/fake_supabase.py on the host). Never set for a shipped build.
         manifestPlaceholders["usesCleartext"] = if (project.hasProperty("fakeCloud")) "true" else "false"
+        buildConfigField("boolean", "FEATURE_VIP_CLUB", featureOn("vip").toString())
+        buildConfigField("boolean", "FEATURE_CAMPUS_MAP", featureOn("map").toString())
         buildConfigField("String", "SUPABASE_URL", "\"${supabaseSetting("supabase.url", "SUPABASE_URL")}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${supabaseSetting("supabase.anonKey", "SUPABASE_ANON_KEY")}\"")
     }
