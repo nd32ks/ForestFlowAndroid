@@ -42,7 +42,8 @@ sealed interface SignUpResult {
  * when there is one, so Postgres Row Level Security sees the signed-in user.
  */
 class SupabaseApi(baseUrl: String, private val apiKey: String, private val clock: () -> Long = System::currentTimeMillis) {
-    private val base = baseUrl.trim().trimEnd('/')
+    // Accept the project URL as pasted from the dashboard, with or without a trailing /rest/v1 or /auth/v1.
+    private val base = baseUrl.trim().trimEnd('/').removeSuffix("/rest/v1").removeSuffix("/auth/v1").trimEnd('/')
     private val json = Json { ignoreUnknownKeys = true }
 
     // ---------------------------------------------------------------- Auth

@@ -52,7 +52,7 @@ class SupabaseCloudTest {
     }
 
     @Test fun account_made_on_one_phone_signs_in_on_another() = runBlocking {
-        val email = "cloud${System.currentTimeMillis()}@xjtlu.test"
+        val email = "cloud${System.currentTimeMillis()}@example.com"
         val a = phone()
         val made = a.signUp("Lin Wei", email, "campus2026", Role.Supplier)
         assertTrue("signUp: $made", made is AuthResult.Ok)
@@ -68,7 +68,7 @@ class SupabaseCloudTest {
     }
 
     @Test fun app_data_follows_the_account_to_a_new_phone() {
-        val email = "move${System.currentTimeMillis()}@xjtlu.test"
+        val email = "move${System.currentTimeMillis()}@example.com"
         val prefs = ctx.getSharedPreferences("supabase_session", Context.MODE_PRIVATE)
 
         // ---- phone 1: sign up, change some data, sign out

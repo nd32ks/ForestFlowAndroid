@@ -127,6 +127,11 @@ class SupabaseBackendTest {
         assertFalse(backend.hasSession(ann.uid))
     }
 
+    @Test fun project_url_pasted_with_a_rest_suffix_still_works() = runBlocking {
+        val pasted = SupabaseBackend(SupabaseApi(server.url + "/rest/v1/", server.key) { now }, MemoryTokens()) { now }
+        assertEquals("Pasty", ok(pasted.signUp("Pasty", "pasty@xjtlu.test", "secret77", Role.Student)).displayName)
+    }
+
     @Test fun wrong_project_key_is_reported() = runBlocking {
         val bad = newBackend(MemoryTokens(), key = "not-the-key")
         assertTrue(err(bad.signIn("ann@xjtlu.test", "secret77")).contains("Supabase key"))
