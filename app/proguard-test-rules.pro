@@ -1,5 +1,5 @@
 # Applied only with -PtestRelease. The instrumentation runner and Compose test APIs execute inside the
-# app process and expect these libraries to be present unshrunk; app code, Firebase, Haze, ZXing and
+# app process and expect these libraries to be present unshrunk; app code, Haze, ZXing and
 # kotlinx.serialization are still processed by R8 exactly as in the shipping build.
 -keep class androidx.** { *; }
 -keep class org.junit.** { *; }
@@ -15,5 +15,3 @@
 -keep class org.ccil.** { *; }
 -keep class org.jspecify.** { *; }
 -keep class kotlinx.serialization.** { *; }
--keep class com.google.firebase.** { *; }
--keep class com.google.android.gms.** { *; }

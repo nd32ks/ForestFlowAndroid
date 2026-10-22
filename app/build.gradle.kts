@@ -1,21 +1,26 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
 }
 
-// Firebase is optional: the plugin is applied only when google-services.json is present,
-// so the project always builds (and runs fully offline) without it.
-if (file("google-services.json").exists()) {
-    apply(plugin = "com.google.gms.google-services")
+// Supabase project (optional): without a URL and key the app runs fully offline on its SQLite database.
+// Put them in local.properties (not committed) or supabase.properties, or in the SUPABASE_URL / SUPABASE_ANON_KEY
+// environment variables:  supabase.url=https://xxxx.supabase.co   supabase.anonKey=eyJ...
+val supabaseProps = Properties().apply {
+    listOf("supabase.properties", "local.properties").forEach { name ->
+        rootProject.file(name).takeIf { it.exists() }?.inputStream()?.use { load(it) }
+    }
 }
+fun supabaseSetting(key: String, env: String): String = (supabaseProps.getProperty(key) ?: System.getenv(env) ?: "").trim()
 
 android {
     namespace = "com.chiforest.forestflow"
     compileSdk = 37
 
     defaultConfig {
-        // Matches the Android app registered in Firebase project forestflow-55d9c.
         applicationId = "forest.flow"
         minSdk = 26
         targetSdk = 37
@@ -24,6 +29,10 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Each instrumented test runs in its own process with app data cleared (Test Orchestrator).
         testInstrumentationRunnerArguments["clearPackageData"] = "true"
+        // -PfakeCloud: let the app talk plain HTTP (to tools/fake_supabase.py on the host). Never set for a shipped build.
+        manifestPlaceholders["usesCleartext"] = if (project.hasProperty("fakeCloud")) "true" else "false"
+        buildConfigField("String", "SUPABASE_URL", "\"${supabaseSetting("supabase.url", "SUPABASE_URL")}\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${supabaseSetting("supabase.anonKey", "SUPABASE_ANON_KEY")}\"")
     }
 
     buildTypes {
@@ -71,12 +80,8 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.haze)
     implementation(libs.zxing.core)
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.auth)
-    implementation(libs.firebase.firestore)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     testImplementation(libs.junit)

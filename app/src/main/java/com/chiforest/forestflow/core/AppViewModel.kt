@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.chiforest.forestflow.auth.AuthResult
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -75,15 +76,37 @@ class AppViewModel(private val c: AppContainer) : ViewModel() {
                 .conflate() // no debounce: a sign-out is on disk before the user can kill the app
                 .collect { snapshot ->
                     val uid = _state.value.session?.uid
+                    val t = System.currentTimeMillis()
                     withContext(Dispatchers.IO) {
                         runCatching {
-                            val t = System.currentTimeMillis()
                             c.db.saveState(snapshot, t)
                             if (uid != null) c.db.saveUserState(uid, snapshot, t)
                         }
                     }
+                    if (uid != null) scheduleRemote(uid, snapshot, t)
                 }
         }
+    }
+
+    // ---- cloud copy (Supabase `user_state`): local SQLite is saved first; the cloud follows ~1.5 s after the last change
+    private data class Pending(val uid: String, val json: String, val ts: Long)
+    private var pending: Pending? = null
+    private var remoteJob: Job? = null
+
+    private fun scheduleRemote(uid: String, snapshot: String, ts: Long) {
+        if (!c.remote.enabled || !c.remote.hasSession(uid)) return
+        pending = Pending(uid, snapshot, ts)
+        remoteJob?.cancel()
+        remoteJob = viewModelScope.launch {
+            delay(1_500)
+            flushRemote()
+        }
+    }
+
+    private suspend fun flushRemote() {
+        val p = pending ?: return
+        pending = null
+        withContext(Dispatchers.IO) { runCatching { c.remote.pushState(p.uid, p.json, p.ts) } }
     }
 
     fun dispatch(action: Action) {
@@ -114,13 +137,21 @@ class AppViewModel(private val c: AppContainer) : ViewModel() {
                 delay(900)
                 dispatch(Action.CodeAutofill)
             }
-            Effect.SignOut -> viewModelScope.launch { c.auth.signOut() }
+            Effect.SignOut -> viewModelScope.launch {
+                remoteJob?.cancel()
+                flushRemote() // the last changes reach the cloud before the cloud session ends
+                c.auth.signOut()
+            }
             is Effect.Log -> {
+                val uid = _state.value.session?.uid
                 val role = _state.value.session?.role?.name ?: "Guest"
                 viewModelScope.launch(Dispatchers.IO) {
                     runCatching {
                         c.db.log(System.currentTimeMillis(), role, effect.action, effect.detail)
                         _activity.value = c.db.recentLogs(8)
+                    }
+                    if (uid != null && c.remote.hasSession(uid)) {
+                        runCatching { c.remote.logActivity(uid, role, effect.action, effect.detail) }
                     }
                 }
             }
@@ -128,13 +159,20 @@ class AppViewModel(private val c: AppContainer) : ViewModel() {
         }
     }
 
-    /** Loads this account's own saved data (if any) and enters the app with it. */
+    /**
+     * Loads this account's own saved data and enters the app with it: the newer of the on-device copy and the
+     * Supabase copy (last write wins), or fresh demo data for a first sign-in.
+     */
     fun signedIn(session: Session) {
         viewModelScope.launch {
-            val saved = withContext(Dispatchers.IO) {
-                runCatching { c.db.loadUserState(session.uid) }.getOrNull()
-                    ?.let { runCatching { json.decodeFromString(AppState.serializer(), it) }.getOrNull() }
+            val local = withContext(Dispatchers.IO) { runCatching { c.db.loadUserStateWithTime(session.uid) }.getOrNull() }
+            val remote = if (!session.guest && c.remote.enabled) {
+                withContext(Dispatchers.IO) { runCatching { c.remote.pullState(session.uid) }.getOrNull() }
+            } else {
+                null
             }
+            val chosen = if (remote != null && (local == null || remote.clientTs > local.second)) remote.json else local?.first
+            val saved = chosen?.let { runCatching { json.decodeFromString(AppState.serializer(), it) }.getOrNull() }
             dispatch(Action.LoginSucceeded(session, saved, System.currentTimeMillis()))
             dispatch(Action.Tick(System.currentTimeMillis())) // an escrow saved earlier may have lapsed
         }

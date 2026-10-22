@@ -83,6 +83,12 @@ class ForestDatabase(context: Context) : SQLiteOpenHelper(context, NAME, null, V
             if (c.moveToFirst()) c.getString(0) else null
         }
 
+    /** (state JSON, time it was saved) for an account, or null. */
+    fun loadUserStateWithTime(uid: String): Pair<String, Long>? =
+        readableDatabase.rawQuery("SELECT json, updated_at FROM user_state WHERE uid = ?", arrayOf(uid)).use { c ->
+            if (c.moveToFirst()) c.getString(0) to c.getLong(1) else null
+        }
+
     fun saveUserState(uid: String, json: String, now: Long) {
         val v = ContentValues().apply {
             put("uid", uid)

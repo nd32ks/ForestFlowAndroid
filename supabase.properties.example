@@ -1,0 +1,4 @@
+# Copy to supabase.properties (not committed) or put the same two lines in local.properties.
+# Project Settings > API in the Supabase dashboard.
+supabase.url=https://YOUR-PROJECT.supabase.co
+supabase.anonKey=YOUR-ANON-OR-PUBLISHABLE-KEY
