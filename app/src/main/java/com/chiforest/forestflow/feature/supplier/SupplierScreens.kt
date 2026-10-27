@@ -354,7 +354,7 @@ fun DispatchScreen(s: AppState, clock: () -> String, dispatch: (Action) -> Unit)
                 Pill("6 Cases Total", c.ink, c.surface2)
             }
             Spacer(Modifier.height(8.dp))
-            ManifestRow("White Peach", "White Peach · A1", "Coil A1 · 3 Cases (72 cans)", "HIGH", c.red, c.redTint, "Critical ${pct(sp.coil("A1"))}%")
+            ManifestRow("White Peach", "White Peach · A1", "Coil A1 · 3 Cases (72 cans)", "HIGH", c.red, c.redTint, "Critical ${pct(sp.coils.first { it.id == "A-1" })}%")
             Hairline()
             ManifestRow("Lychee", "Lychee Fizzy · B2", "Coil B2 · 2 Cases (48 cans)", "MEDIUM", c.amber, c.amberTint, "Low ${pct(sp.coil("B2"))}%")
             Hairline()
