@@ -436,7 +436,7 @@ fun DispatchScreen(s: AppState, clock: () -> String, dispatch: (Action) -> Unit)
     }
 }
 
-private fun pct(c: Coil?) = ((c?.level ?: 0) * 100) / 15
+private fun pct(c: Coil?): Int = "${((c?.level ?: 0) * 100) / 15}"
 
 @Composable
 private fun PipelineStep(title: String, time: String, icon: ImageVector, done: Boolean, active: Boolean, last: Boolean) {
