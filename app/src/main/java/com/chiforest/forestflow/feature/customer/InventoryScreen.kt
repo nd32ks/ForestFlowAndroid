@@ -58,7 +58,7 @@ import com.chiforest.forestflow.ui.theme.Type
 @Composable
 fun InventoryScreen(s: AppState, now: Long, map: MapData, dispatch: (Action) -> Unit) {
     val c = FF.c
-    val node = map.node(s.activeNodeId)
+    val node = map.node(s.activeNodeId) ?: map.allNodes.first()
     val campus = map.campusOfNode(node.id)
     ScreenColumn {
         // Station card
