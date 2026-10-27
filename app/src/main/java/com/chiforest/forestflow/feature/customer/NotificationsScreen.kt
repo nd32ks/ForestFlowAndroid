@@ -116,7 +116,7 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
                         ForestButton("Unsubscribe", { dispatch(Action.Unsub("peach")) }, Modifier.fillMaxWidth(), small = true, style = BtnStyle.Ghost)
                     }
                 }
-                if (active != 0) {
+                if (active == 0) {
                     EmptyState(Ic.BellOff, "No restock alerts yet", "Tap Notify Me on an out-of-stock coil to join the FIFO queue.", "Browse Inventory") { dispatch(Action.Tab(0)) }
                 }
             }
