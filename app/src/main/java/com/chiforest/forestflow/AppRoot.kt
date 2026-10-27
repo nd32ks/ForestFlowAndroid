@@ -57,6 +57,8 @@ import com.chiforest.forestflow.core.LogRow
 import com.chiforest.forestflow.core.Role
 import com.chiforest.forestflow.core.SheetKind
 import com.chiforest.forestflow.core.ToastIcon
+import com.chiforest.forestflow.feature.customer.InventoryScreen
+import com.chiforest.forestflow.feature.customer.NotificationsScreen
 import com.chiforest.forestflow.feature.login.CasSheet
 import com.chiforest.forestflow.feature.login.LoginScreen
 import com.chiforest.forestflow.feature.supplier.AlertsScreen
@@ -177,10 +179,12 @@ private fun RoleShell(s: AppState, now: Long, role: Role, vm: AppViewModel, disp
                 },
                 label = "tabs",
             ) { t ->
-                if (student) {
-                    // Student screens (Features 2 and 3) are not built yet at this stage.
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Student screens coming next", color = FF.c.ink)
+                if (student) when (t) {
+                    0 -> InventoryScreen(s, now, map, dispatch)
+                    2 -> NotificationsScreen(s, dispatch)
+                    else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        // Campus map and VIP pass (Feature 3) are not built yet at this stage.
+                        Text("Coming next", color = FF.c.ink)
                     }
                 } else when (t) {
                     0 -> TelemetryScreen(s, vm::clock, dispatch)
@@ -215,9 +219,8 @@ private fun RoleShell(s: AppState, now: Long, role: Role, vm: AppViewModel, disp
                 val items = if (student) studentTabs.map { id ->
                     when (id) {
                         0 -> NavItem(Ic.Box, "Inventory")
-                        1 -> NavItem(Ic.Navigation, "Campus Map")
                         2 -> NavItem(Ic.Bell, "Notifications", dot = s.unread(Features.vipClub) > 0)
-                        else -> NavItem(Ic.IdCard, "VIP Pass")
+                        else -> NavItem(Ic.Box, "More")
                     }
                 } else listOf(
                     NavItem(Ic.BarChart, "Telemetry"),
