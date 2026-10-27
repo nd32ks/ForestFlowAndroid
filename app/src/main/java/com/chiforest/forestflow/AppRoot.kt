@@ -57,15 +57,6 @@ import com.chiforest.forestflow.core.LogRow
 import com.chiforest.forestflow.core.Role
 import com.chiforest.forestflow.core.SheetKind
 import com.chiforest.forestflow.core.ToastIcon
-import com.chiforest.forestflow.feature.customer.BuildingsSheet
-import com.chiforest.forestflow.feature.customer.InventoryScreen
-import com.chiforest.forestflow.feature.customer.LayersSheet
-import com.chiforest.forestflow.feature.customer.MapScreen
-import com.chiforest.forestflow.feature.customer.NotificationsScreen
-import com.chiforest.forestflow.feature.customer.QrSheet
-import com.chiforest.forestflow.feature.customer.RedeemSheet
-import com.chiforest.forestflow.feature.customer.StationsSheet
-import com.chiforest.forestflow.feature.customer.VipScreen
 import com.chiforest.forestflow.feature.login.CasSheet
 import com.chiforest.forestflow.feature.login.LoginScreen
 import com.chiforest.forestflow.feature.supplier.AlertsScreen
@@ -155,13 +146,9 @@ fun AppRoot(vm: AppViewModel) {
 
     when (s.sheet) {
         SheetKind.Profile -> ProfileSheet(s, vm, dispatch)
-        SheetKind.Buildings -> BuildingsSheet(s, vm.mapData, dispatch)
-        SheetKind.Layers -> LayersSheet(s, vm.mapData, dispatch)
-        SheetKind.Stations -> StationsSheet(s, vm.mapData, dispatch)
-        SheetKind.Redeem -> RedeemSheet(s, dispatch)
-        SheetKind.Qr -> QrSheet(s, vm.mapData, dispatch)
         SheetKind.Cas -> CasSheet(s, vm.authBackend, vm::casSubmit, dispatch)
-        null -> Unit
+        // Buildings, Layers, Stations, Redeem and Qr sheets belong to Features 2 and 3 (later).
+        else -> Unit
     }
 }
 
@@ -190,11 +177,11 @@ private fun RoleShell(s: AppState, now: Long, role: Role, vm: AppViewModel, disp
                 },
                 label = "tabs",
             ) { t ->
-                if (student) when (t) {
-                    0 -> InventoryScreen(s, now, map, dispatch)
-                    1 -> MapScreen(s, map, dispatch)
-                    2 -> NotificationsScreen(s, dispatch)
-                    else -> VipScreen(s, now, map, dispatch)
+                if (student) {
+                    // Student screens (Features 2 and 3) are not built yet at this stage.
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Student screens coming next", color = FF.c.ink)
+                    }
                 } else when (t) {
                     0 -> TelemetryScreen(s, vm::clock, dispatch)
                     1 -> DispatchScreen(s, vm::clock, dispatch)

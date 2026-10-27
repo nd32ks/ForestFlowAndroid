@@ -336,7 +336,7 @@ fun DispatchScreen(s: AppState, clock: () -> String, dispatch: (Action) -> Unit)
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 ForestButton(
-                    if (sp.runnerPinged || sp.stage >= 3) "En Route" else "Ping", { dispatch(Action.PingRunner) },
+                    if (sp.runnerPinged || sp.stage >= 3) "Pinged · En Route" else "Ping", { dispatch(Action.PingRunner) },
                     Modifier.weight(1f), style = if (sp.runnerPinged || sp.stage >= 3) BtnStyle.Green else BtnStyle.Dark,
                     icon = if (sp.runnerPinged || sp.stage >= 3) Ic.Check else Ic.Ping, enabled = sp.stage < 4,
                 )
@@ -354,11 +354,11 @@ fun DispatchScreen(s: AppState, clock: () -> String, dispatch: (Action) -> Unit)
                 Pill("6 Cases Total", c.ink, c.surface2)
             }
             Spacer(Modifier.height(8.dp))
-            ManifestRow("White Peach", "White Peach · A1", "Coil A1 · 3 Cases (72 cans)", sp.coil("A1"))
+            ManifestRow("White Peach", "White Peach · A1", "Coil A1 · 3 Cases (72 cans)", "HIGH", c.red, c.redTint, "Critical ${pct(sp.coil("A1"))}%")
             Hairline()
-            ManifestRow("Lychee", "Lychee Fizzy · B2", "Coil B2 · 2 Cases (48 cans)", sp.coil("B2"))
+            ManifestRow("Lychee", "Lychee Fizzy · B2", "Coil B2 · 2 Cases (48 cans)", "MEDIUM", c.amber, c.amberTint, "Low ${pct(sp.coil("B2"))}%")
             Hairline()
-            ManifestRow("Green Tea", "Green Tea Zero Sugar · C4", "Coil C4 · 1 Case (24 cans)", sp.coil("C4"))
+            ManifestRow("Green Tea", "Green Tea Zero Sugar · C4", "Coil C4 · 1 Case (24 cans)", "LOW", c.green, c.greenTint, "Steady ${pct(sp.coil("C4"))}%")
         }
 
         // dynamic clearance
@@ -439,14 +439,6 @@ fun DispatchScreen(s: AppState, clock: () -> String, dispatch: (Action) -> Unit)
 
 private fun pct(c: Coil?) = ((c?.level ?: 0) * 100) / 15
 
-/** Manifest wording follows the live fill level, so a refilled coil never reads "Critical 100%". */
-internal fun fillLabel(pct: Int) = when {
-    pct >= 100 -> "Full"
-    pct <= 20 -> "Critical"
-    pct <= 50 -> "Low"
-    else -> "Steady"
-}
-
 @Composable
 private fun PipelineStep(title: String, time: String, icon: ImageVector, done: Boolean, active: Boolean, last: Boolean) {
     val c = FF.c
@@ -482,16 +474,8 @@ private fun PipelineStep(title: String, time: String, icon: ImageVector, done: B
 }
 
 @Composable
-private fun ManifestRow(product: String, title: String, sub: String, coil: Coil?) {
+private fun ManifestRow(product: String, title: String, sub: String, priority: String, fg: Color, bg: Color, level: String) {
     val c = FF.c
-    val p = pct(coil)
-    val level = "${fillLabel(p)} $p%"
-    val (priority, fg, bg) = when {
-        p >= 100 -> Triple("LOADED", c.green, c.greenTint)
-        p <= 20 -> Triple("HIGH", c.red, c.redTint)
-        p <= 50 -> Triple("MEDIUM", c.amber, c.amberTint)
-        else -> Triple("LOW", c.green, c.greenTint)
-    }
     Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         ProductArt(product, Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(canColor(product).copy(alpha = 0.12f)))
         Spacer(Modifier.width(12.dp))
