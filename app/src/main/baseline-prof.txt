@@ -1,0 +1,6 @@
+# Baseline profile: tells Android to precompile the app's own code at install time, so the first
+# launch does not start in the interpreter. Hand-written wildcard rules (H = hot, S = startup,
+# P = post-startup) covering this app's package; Compose and AndroidX ship their own profiles.
+# Replace with a profile generated from a real run (Macrobenchmark) when a stable device is available.
+HSPLcom/chiforest/forestflow/**;->**(**)**
+Lcom/chiforest/forestflow/**;
