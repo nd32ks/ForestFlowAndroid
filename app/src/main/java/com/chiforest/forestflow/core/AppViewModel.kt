@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -75,6 +76,7 @@ class AppViewModel(private val c: AppContainer) : ViewModel() {
     private fun persist() {
         viewModelScope.launch {
             _state.map { json.encodeToString(AppState.serializer(), it) }
+                .flowOn(Dispatchers.Default) // the full-state JSON encode runs off the main thread
                 .distinctUntilChanged()
                 .drop(1)
                 .conflate() // no debounce: a sign-out is on disk before the user can kill the app

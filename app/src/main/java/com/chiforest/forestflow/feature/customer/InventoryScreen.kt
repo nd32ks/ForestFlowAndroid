@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chiforest.forestflow.core.Action
+import com.chiforest.forestflow.core.Escrow
 import com.chiforest.forestflow.core.AppState
 import com.chiforest.forestflow.core.Features
 import com.chiforest.forestflow.core.MapData
@@ -56,7 +58,7 @@ import com.chiforest.forestflow.ui.theme.FF
 import com.chiforest.forestflow.ui.theme.Type
 
 @Composable
-fun InventoryScreen(s: AppState, now: Long, map: MapData, dispatch: (Action) -> Unit) {
+fun InventoryScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Action) -> Unit) {
     val c = FF.c
     val node = map.node(s.activeNodeId) ?: map.allNodes.first()
     val campus = map.campusOfNode(node.id)
@@ -127,7 +129,7 @@ fun InventoryScreen(s: AppState, now: Long, map: MapData, dispatch: (Action) -> 
                     Column(Modifier.weight(1f)) {
                         Text("1 Lock in Escrow", style = Type.title(15.sp, 800), color = Color.White)
                         Text("${map.node(e.nodeId)?.shortName} Coil #${e.coil} · ${e.product}", style = Type.body(12.sp), color = Color.White.copy(alpha = 0.7f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text("Hold ${mmss(e.holdLeftMs(now))}", style = Type.mono(13.sp, 700), color = Color(0xFFFFB4AC))
+                        HoldLeft(e, now)
                     }
                     ForestButton("Release", { dispatch(Action.Release) }, small = true, style = BtnStyle.Primary)
                 }
@@ -201,4 +203,10 @@ private fun CoilCard(p: Product, count: Int, watching: Boolean, modifier: Modifi
             }
         }
     }
+}
+
+/** Only this text reads the clock, so the per-second tick recomposes one Text instead of the whole screen. */
+@Composable
+private fun HoldLeft(e: Escrow, now: State<Long>) {
+    Text("Hold ${mmss(e.holdLeftMs(now.value))}", style = Type.mono(13.sp, 700), color = Color(0xFFFFB4AC))
 }

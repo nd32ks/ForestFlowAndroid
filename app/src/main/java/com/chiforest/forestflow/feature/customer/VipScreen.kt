@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,7 +69,7 @@ import com.chiforest.forestflow.ui.theme.Type
 fun escrowPayload(e: Escrow) = "chiforest://escrow/${e.nodeId}-${e.coil}-${Escrow.BACKUP_CODE.removePrefix("CF-").let { "CF$it" }}"
 
 @Composable
-fun VipScreen(s: AppState, now: Long, map: MapData, dispatch: (Action) -> Unit) {
+fun VipScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Action) -> Unit) {
     val c = FF.c
     val e = s.customer.escrow
     ScreenColumn {
@@ -98,12 +99,7 @@ fun VipScreen(s: AppState, now: Long, map: MapData, dispatch: (Action) -> Unit) 
                 Hairline()
                 Spacer(Modifier.height(16.dp))
                 Text("TIME REMAINING TO CLAIM", style = Type.eyebrow(10.sp), color = c.faint, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.Bottom) {
-                    val left = e.claimLeftMs(now)
-                    Text(mmss(left), style = Type.mono(52.sp, 800), color = if (left < 60_000) c.red else c.ink)
-                    Spacer(Modifier.width(6.dp))
-                    Text("MIN", style = Type.eyebrow(11.sp), color = c.faint, modifier = Modifier.padding(bottom = 12.dp))
-                }
+                ClaimCountdown(e, now)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                     LiveDot(c.green, size = 7.dp)
                     Spacer(Modifier.width(6.dp))
@@ -265,5 +261,17 @@ fun QrSheet(s: AppState, map: MapData, dispatch: (Action) -> Unit) {
             Spacer(Modifier.height(12.dp))
             Text("${map.node(e.nodeId)?.name} · Coil #0${e.coil} · ${Escrow.BACKUP_CODE}", style = Type.mono(13.sp, 600), color = c.muted, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         }
+    }
+}
+
+/** Only the countdown reads the clock, so the rest of the VIP pass (QR code included) is not redrawn every second. */
+@Composable
+private fun ClaimCountdown(e: Escrow, now: State<Long>) {
+    val c = FF.c
+    val left = e.claimLeftMs(now.value)
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.Bottom) {
+        Text(mmss(left), style = Type.mono(52.sp, 800), color = if (left < 60_000) c.red else c.ink)
+        Spacer(Modifier.width(6.dp))
+        Text("MIN", style = Type.eyebrow(11.sp), color = c.faint, modifier = Modifier.padding(bottom = 12.dp))
     }
 }

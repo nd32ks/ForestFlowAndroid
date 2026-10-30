@@ -35,6 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -95,7 +96,8 @@ import java.util.Locale
 @Composable
 fun AppRoot(vm: AppViewModel) {
     val s by vm.state.collectAsStateWithLifecycle()
-    val now by vm.now.collectAsStateWithLifecycle()
+    // Held as State and read only inside the countdown composables, so the clock tick does not recompose the whole app.
+    val now = vm.now.collectAsStateWithLifecycle()
     val ready by vm.ready.collectAsStateWithLifecycle()
     val toasts = remember { ToastController() }
     val view = LocalView.current
@@ -167,7 +169,7 @@ fun AppRoot(vm: AppViewModel) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun RoleShell(s: AppState, now: Long, role: Role, vm: AppViewModel, dispatch: (Action) -> Unit) {
+private fun RoleShell(s: AppState, now: State<Long>, role: Role, vm: AppViewModel, dispatch: (Action) -> Unit) {
     val haze = rememberHazeState()
     val map = vm.mapData
     val student = role == Role.Student

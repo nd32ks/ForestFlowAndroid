@@ -35,6 +35,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -80,10 +82,11 @@ import com.chiforest.forestflow.ui.theme.FF
 import com.chiforest.forestflow.ui.theme.Type
 
 @Composable
-fun LoginScreen(s: AppState, now: Long, dispatch: (Action) -> Unit) {
+fun LoginScreen(s: AppState, now: State<Long>, dispatch: (Action) -> Unit) {
     val c = FF.c
     val supplier = s.loginRole == UserRole.Supplier
-    val codeLeft = s.codeLeftSec(now)
+    // Stays 0 until a code is requested, so the clock tick only recomposes this screen during the SMS countdown.
+    val codeLeft by remember(s) { derivedStateOf { s.codeLeftSec(now.value) } }
     Box(Modifier.fillMaxSize().background(c.bg)) {
         // ambient brand glow
         Canvas(Modifier.fillMaxWidth().height(420.dp)) {
