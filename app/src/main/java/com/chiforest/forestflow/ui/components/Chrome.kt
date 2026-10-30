@@ -38,6 +38,10 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.remember
+import android.content.Context
+import android.app.ActivityManager
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -73,12 +77,35 @@ import kotlinx.coroutines.delay
 @Composable
 fun glassStyle(): HazeStyle {
     val c = FF.c
-    return HazeStyle(
-        backgroundColor = c.bg,
-        tint = HazeTint(c.glass),
-        blurRadius = 24.dp,
-        noiseFactor = 0.04f,
-    )
+    return remember(c) {
+        HazeStyle(
+            backgroundColor = c.bg,
+            tint = HazeTint(c.glass),
+            blurRadius = 18.dp,
+            noiseFactor = 0.04f,
+        )
+    }
+}
+
+/**
+ * Weak devices (flagged low-RAM, or a per-app heap of 128 MB or less) skip the live blur: it re-blurs everything
+ * behind the header and nav bar every frame, which is the most expensive thing on screen. They get a plain
+ * translucent panel instead.
+ */
+@Composable
+fun rememberLowEndDevice(): Boolean {
+    val ctx = LocalContext.current
+    return remember {
+        val am = ctx.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        am.isLowRamDevice || am.memoryClass <= 128
+    }
+}
+
+@Composable
+fun Modifier.glass(hazeState: HazeState): Modifier {
+    val c = FF.c
+    val style = glassStyle()
+    return if (rememberLowEndDevice()) background(c.bg.copy(alpha = 0.94f)) else hazeEffect(hazeState, style)
 }
 
 // ---------------------------------------------------------------- glass pill nav
@@ -108,7 +135,7 @@ fun GlassNavBar(
             .height(66.dp)
             .shadow(24.dp, shape, ambientColor = Color(0x33101828), spotColor = Color(0x40101828))
             .clip(shape)
-            .hazeEffect(hazeState, glassStyle())
+            .glass(hazeState)
             .border(1.dp, c.glassLine, shape)
             .drawWithContent {
                 drawContent()
@@ -200,7 +227,7 @@ fun GlassHeader(
     Box(
         modifier
             .fillMaxWidth()
-            .hazeEffect(hazeState, glassStyle())
+            .glass(hazeState)
             .drawWithContent {
                 drawContent()
                 drawLine(c.line.copy(alpha = 0.6f), Offset(0f, size.height - 0.5f), Offset(size.width, size.height - 0.5f), 1f)

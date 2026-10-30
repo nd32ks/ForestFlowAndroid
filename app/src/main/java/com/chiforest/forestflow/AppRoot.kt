@@ -76,6 +76,7 @@ import com.chiforest.forestflow.ui.components.BtnStyle
 import com.chiforest.forestflow.ui.components.ForestButton
 import com.chiforest.forestflow.ui.components.ForestSheet
 import com.chiforest.forestflow.ui.components.GlassHeader
+import com.chiforest.forestflow.ui.components.rememberLowEndDevice
 import com.chiforest.forestflow.ui.components.GlassNavBar
 import com.chiforest.forestflow.ui.components.Hairline
 import com.chiforest.forestflow.ui.components.Ic
@@ -180,7 +181,7 @@ private fun RoleShell(s: AppState, now: State<Long>, role: Role, vm: AppViewMode
     val imeVisible = WindowInsets.isImeVisible
 
     Box(Modifier.fillMaxSize()) {
-        Box(Modifier.fillMaxSize().hazeSource(haze)) {
+        Box(Modifier.fillMaxSize().then(if (rememberLowEndDevice()) Modifier else Modifier.hazeSource(haze))) {
             AnimatedContent(
                 targetState = tab,
                 transitionSpec = {
