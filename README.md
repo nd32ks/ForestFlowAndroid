@@ -126,7 +126,7 @@ protocol; run the app or tests against it with
 
 ## Campus map
 
-Real XJTLU maps: Taicang (`tc_campus.png`, from the official illustrated map) and SIP (`sip_campus.png`,
+Real XJTLU maps: Taicang (`tc_campus.webp`, from the official illustrated map) and SIP (`sip_campus.webp`,
 rendered from *XJTLU-SIP-Campus-Map-March2026-v2.pdf*). Buildings, entrances, points of interest and the
 11 vending nodes are in `app/src/main/assets/maps/map_data.json` as fractions of image width/height —
 edit that file to move a machine. Node locations are **demo placeholders** (`"demo": true`).

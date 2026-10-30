@@ -97,12 +97,17 @@ class MapGeo(val w: Float, val h: Float, val iw: Float, val ih: Float, val maxZo
 
 fun Campus.initialCamera() = Camera(initialZoom, initialCenter[0], initialCenter[1])
 
-/** Decoded campus maps, kept for the process lifetime (two images). */
+/** The decoded map that is on screen. Only one is kept (about 9 MB), so switching campus frees the other. */
 object MapBitmaps {
-    private val cache = HashMap<String, ImageBitmap>()
+    private var path: String? = null
+    private var bitmap: ImageBitmap? = null
 
     @Synchronized
-    fun get(context: Context, path: String): ImageBitmap = cache.getOrPut(path) {
-        context.assets.open(path).use { BitmapFactory.decodeStream(it) }.asImageBitmap()
+    fun get(context: Context, path: String): ImageBitmap {
+        if (this.path == path) bitmap?.let { return it }
+        val decoded = context.assets.open(path).use { BitmapFactory.decodeStream(it) }.asImageBitmap()
+        this.path = path
+        bitmap = decoded
+        return decoded
     }
 }

@@ -7,7 +7,7 @@
    "name": "Taicang",
    "nameZh": "太仓",
    "subtitle": "XJTLU Taicang",
-   "image": "maps/tc_campus.png",
+   "image": "maps/tc_campus.webp",
    "northBearingDeg": 35,
    "initialCenter": [
     0.668,
@@ -374,7 +374,7 @@
    "name": "SIP",
    "nameZh": "园区",
    "subtitle": "XJTLU SIP · Suzhou",
-   "image": "maps/sip_campus.png",
+   "image": "maps/sip_campus.webp",
    "northBearingDeg": 0,
    "initialCenter": [
     0.45,
