@@ -1,11 +1,13 @@
 package com.chiforest.forestflow.core
 
+import androidx.compose.runtime.Immutable
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
 @Serializable
 enum class Role { Student, Supplier }
 
+@Immutable
 @Serializable
 data class Session(
     val uid: String,
@@ -16,6 +18,7 @@ data class Session(
     val guest: Boolean = true,
 )
 
+@Immutable
 @Serializable
 data class Escrow(
     val nodeId: String,
@@ -36,9 +39,11 @@ data class Escrow(
     }
 }
 
+@Immutable
 @Serializable
 data class Camera(val zoom: Float, val cx: Float, val cy: Float)
 
+@Immutable
 @Serializable
 data class Layers(
     val nodes: Boolean = true,
@@ -47,6 +52,7 @@ data class Layers(
     val dimDark: Boolean = true,
 )
 
+@Immutable
 @Serializable
 data class CustomerState(
     val osmanthusWatch: Boolean = false,
@@ -68,6 +74,7 @@ data class CustomerState(
 @Serializable
 enum class FeedType { Escrow, Restock, Fifo, Clearance, Stockout, Surge, Dispatch }
 
+@Immutable
 @Serializable
 data class FeedEvent(
     val id: String,
@@ -79,6 +86,7 @@ data class FeedEvent(
     val chips: List<String> = emptyList(),
 )
 
+@Immutable
 @Serializable
 data class Coil(val id: String, val name: String, val level: Int) {
     val state: String get() = when {
@@ -88,6 +96,7 @@ data class Coil(val id: String, val name: String, val level: Int) {
     }
 }
 
+@Immutable
 @Serializable
 data class SupplierState(
     val coils: List<Coil> = Seed.coils,
@@ -119,6 +128,7 @@ data class SupplierState(
 
 enum class SheetKind { Profile, Buildings, Layers, Redeem, Cas, Qr, Stations }
 
+@Immutable
 sealed interface MapFocus {
     val nonce: Int
     data class Node(val id: String, override val nonce: Int) : MapFocus
@@ -127,6 +137,7 @@ sealed interface MapFocus {
     data class Compass(override val nonce: Int) : MapFocus
 }
 
+@Immutable
 @Serializable
 data class AppState(
     val session: Session? = null,
@@ -176,6 +187,7 @@ data class AppState(
         if (codeSentAt == 0L) 0 else (60 - ((now - codeSentAt) / 1000).toInt()).coerceAtLeast(0)
 }
 
+@Immutable
 data class Drop(val id: String, val name: String, val nameZh: String, val pts: Int, val note: String)
 
 object Seed {
@@ -236,4 +248,5 @@ object Seed {
     )
 }
 
+@Immutable
 data class Product(val coil: Int, val key: String, val name: String, val nameZh: String, val tags: List<String>)
