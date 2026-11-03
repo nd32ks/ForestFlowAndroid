@@ -35,7 +35,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chiforest.forestflow.core.Action
+import com.chiforest.forestflow.ai.DrinkCatalog
 import com.chiforest.forestflow.core.Escrow
+import com.chiforest.forestflow.core.RestockEta
 import com.chiforest.forestflow.core.AppState
 import com.chiforest.forestflow.core.Features
 import com.chiforest.forestflow.core.MapData
@@ -90,6 +92,8 @@ fun InventoryScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Acti
             }
         }
 
+        AskCard(DrinkCatalog.options(Seed.products, node.ready), s.customer.osmanthusWatch) { dispatch(Action.Notify) }
+
         Column {
             Eyebrow("Tray Coil Inventory") {
                 Pill("4 Slots", c.ink, c.surface)
@@ -102,7 +106,8 @@ fun InventoryScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Acti
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     row.forEach { p ->
                         val count = node.ready[p.key] ?: 0
-                        CoilCard(p, count, s.customer.osmanthusWatch, Modifier.weight(1f), dispatch)
+                        val eta = if (count <= 0) RestockEta.forNode(node.id, s.supplier)?.label else null
+                        CoilCard(p, count, s.customer.osmanthusWatch, Modifier.weight(1f), dispatch, eta)
                     }
                 }
                 Spacer(Modifier.height(12.dp))
@@ -157,7 +162,7 @@ private fun QuickAction(icon: ImageVector, label: String, modifier: Modifier, ac
 }
 
 @Composable
-private fun CoilCard(p: Product, count: Int, watching: Boolean, modifier: Modifier, dispatch: (Action) -> Unit) {
+private fun CoilCard(p: Product, count: Int, watching: Boolean, modifier: Modifier, dispatch: (Action) -> Unit, eta: String? = null) {
     val c = FF.c
     val out = count <= 0
     Column(modifier.softCard(RoundedCornerShape(22.dp))) {
@@ -182,6 +187,10 @@ private fun CoilCard(p: Product, count: Int, watching: Boolean, modifier: Modifi
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 if (out) Pill("RESTOCKING", c.amber, c.amberTint)
                 else p.tags.forEach { Pill(it, c.muted, c.surface2) }
+            }
+            if (eta != null) {
+                Spacer(Modifier.height(6.dp))
+                Text(eta, style = Type.body(10.sp, 600), color = c.amber)
             }
             Spacer(Modifier.height(10.dp))
             if (out && p.key != "Osmanthus" && !Features.campusMap) {

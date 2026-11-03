@@ -38,6 +38,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chiforest.forestflow.core.Action
+import com.chiforest.forestflow.core.RestockEta
 import com.chiforest.forestflow.core.AppState
 import com.chiforest.forestflow.core.Features
 import com.chiforest.forestflow.feature.ScreenColumn
@@ -93,7 +94,7 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
                 AnimatedVisibility(cu.osmanthusWatch, enter = expandVertically() + fadeIn(), exit = exit) {
                     WatchCard(
                         "osmanthus", "Osmanthus Plum Sparkling", "Node 01 — Building G Atrium",
-                        "Target Coil #04: Restocking Today 14:30", c.amber, c.amberTint,
+                        RestockEta.forNode("N01", s.supplier)?.label ?: "Target Coil #04: Restocking Today 14:30", c.amber, c.amberTint,
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             ForestButton("Check Live Status", { dispatch(Action.LiveStatus) }, Modifier.weight(1f), small = true, style = BtnStyle.Dark, icon = Ic.Activity)

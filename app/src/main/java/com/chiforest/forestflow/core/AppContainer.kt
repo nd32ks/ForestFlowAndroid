@@ -2,6 +2,8 @@ package com.chiforest.forestflow.core
 
 import android.content.Context
 import com.chiforest.forestflow.BuildConfig
+import com.chiforest.forestflow.ai.ChatCompletionsTransport
+import com.chiforest.forestflow.ai.DrinkAssistant
 import com.chiforest.forestflow.auth.AuthRepository
 import com.chiforest.forestflow.auth.LocalAuthRepository
 import com.chiforest.forestflow.auth.NoRemote
@@ -26,6 +28,11 @@ class AppContainer(context: Context) {
         } else {
             null
         }
+
+    /** Free-text drink picker. Uses the model when an AI key was built in, otherwise only the offline matcher. */
+    val assistant = DrinkAssistant(
+        if (BuildConfig.AI_KEY.isNotBlank()) ChatCompletionsTransport(BuildConfig.AI_ENDPOINT, BuildConfig.AI_KEY, BuildConfig.AI_MODEL) else null,
+    )
 
     val auth: AuthRepository = supabase ?: localAuth
     val remote: RemoteStore = supabase ?: NoRemote

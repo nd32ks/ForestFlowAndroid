@@ -35,6 +35,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.chiforest.forestflow.feature.customer.LocalDrinkAssistant
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.State
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -149,7 +151,7 @@ fun AppRoot(vm: AppViewModel) {
             ) { r ->
                 when (r) {
                     null -> LoginScreen(s, now, dispatch)
-                    else -> RoleShell(s, now, r, vm, dispatch)
+                    else -> CompositionLocalProvider(LocalDrinkAssistant provides vm.assistant) { RoleShell(s, now, r, vm, dispatch) }
                 }
             }
         }

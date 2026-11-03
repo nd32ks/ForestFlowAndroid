@@ -42,6 +42,10 @@ android {
         buildConfigField("boolean", "FEATURE_CAMPUS_MAP", featureOn("map").toString())
         buildConfigField("String", "SUPABASE_URL", "\"${supabaseSetting("supabase.url", "SUPABASE_URL")}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${supabaseSetting("supabase.anonKey", "SUPABASE_ANON_KEY")}\"")
+        // Drink assistant: any OpenAI-style chat endpoint. Leave ai.key empty and the app uses its offline matcher only.
+        buildConfigField("String", "AI_KEY", "\"${supabaseSetting("ai.key", "FF_AI_KEY")}\"")
+        buildConfigField("String", "AI_ENDPOINT", "\"${supabaseSetting("ai.endpoint", "FF_AI_ENDPOINT").ifBlank { "https://api.deepseek.com/chat/completions" }}\"")
+        buildConfigField("String", "AI_MODEL", "\"${supabaseSetting("ai.model", "FF_AI_MODEL").ifBlank { "deepseek-chat" }}\"")
     }
 
     buildTypes {

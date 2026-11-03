@@ -28,6 +28,7 @@ import java.util.Locale
 class AppViewModel(private val c: AppContainer) : ViewModel() {
     private val reducer = Reducer(c.mapData, seedEscrow = Features.vipClub)
     val mapData: MapData get() = c.mapData
+    val assistant get() = c.assistant
     val authBackend: String get() = c.auth.backendName
 
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = false }
