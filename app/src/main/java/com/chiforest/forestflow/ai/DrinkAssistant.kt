@@ -19,6 +19,13 @@ object DrinkCatalog {
         "Lychee" to "sweet, floral, sparkling, 0 sugar",
         "Calamansi" to "sour, citrus, refreshing, vitamin C",
         "Osmanthus" to "floral, tart plum, traditional, 0 sugar",
+        "Grape" to "sweet, rich, dark grape, sparkling, 0 sugar",
+        "Mango" to "sweet, tropical mango, sparkling, 0 sugar",
+        "Electro" to "still, electrolytes, after sport, grapefruit, 0 sugar",
+        "Monster" to "energy drink, high caffeine, citrus, 0 sugar",
+        "Red Bull" to "energy drink, caffeine, sweet, contains sugar",
+        "Ice Tea" to "black tea, lemon, sweet, contains sugar, caffeine",
+        "Green Tea" to "tea, grassy, light, unsweetened, caffeine",
     )
 
     fun options(products: List<com.chiforest.forestflow.core.Product>, ready: Map<String, Int>): List<DrinkOption> =
@@ -34,9 +41,16 @@ object QuickMatcher {
         "White Peach" to listOf("peach", "sweet", "fruity", "light", "juice", "soft", "白桃", "甜"),
         "Lychee" to listOf("lychee", "litchi", "sweet", "floral", "fizz", "sparkling", "bubbly", "荔枝", "甜"),
         "Calamansi" to listOf("lime", "calamansi", "citrus", "sour", "tangy", "vitamin", "vit c", "refresh", "fresh", "cool", "tired", "study", "青桔", "酸"),
-        "Osmanthus" to listOf("osmanthus", "plum", "floral", "tart", "traditional", "tea", "herbal", "smoky", "different", "桂花", "乌梅"),
+        "Osmanthus" to listOf("osmanthus", "plum", "floral", "tart", "traditional", "herbal", "smoky", "different", "桂花", "乌梅"),
+        "Grape" to listOf("grape", "kyoho", "rich", "sweet", "berry", "葡萄"),
+        "Mango" to listOf("mango", "tropical", "sweet", "fruity", "芒果"),
+        "Green Tea" to listOf("green tea", "tea", "grassy", "light", "unsweetened", "绿茶", "茶"),
+        "Electro" to listOf("electrolyte", "electro", "alienergy", "grapefruit", "sport", "gym", "workout", "run", "thirsty", "hydrate", "sweat", "电解质", "西柚"),
+        "Monster" to listOf("monster", "energy", "caffeine", "awake", "tired", "exam", "all-nighter", "boost", "魔爪"),
+        "Red Bull" to listOf("red bull", "redbull", "energy", "caffeine", "awake", "tired", "boost", "红牛"),
+        "Ice Tea" to listOf("ice tea", "iced tea", "black tea", "lemon tea", "sweet tea", "冰红茶", "红茶"),
     )
-    private val byName = setOf("peach", "lychee", "litchi", "lime", "calamansi", "osmanthus", "plum", "白桃", "荔枝", "青桔", "桂花", "乌梅")
+    private val byName = setOf("peach", "lychee", "litchi", "lime", "calamansi", "osmanthus", "plum", "grape", "mango", "green tea", "electrolyte", "alienergy", "monster", "red bull", "ice tea", "白桃", "荔枝", "青桔", "桂花", "乌梅", "葡萄", "芒果", "绿茶", "电解质", "魔爪", "红牛", "冰红茶")
     private val noSugar = listOf("no sugar", "sugar free", "sugar-free", "zero sugar", "0 sugar", "diet", "healthy", "low sugar", "无糖", "零糖")
 
     class Result(val best: DrinkOption?, val reason: String, val confident: Boolean)
@@ -45,7 +59,7 @@ object QuickMatcher {
         val q = query.trim().lowercase()
         val scored = options.map { o ->
             var score = words[o.key].orEmpty().count { it in q }
-            if (noSugar.any { it in q }) score += if ("0 sugar" in o.traits) 1 else -3
+            if (noSugar.any { it in q }) score += if ("0 sugar" in o.traits || "unsweetened" in o.traits) 1 else -3
             Triple(o, score, words[o.key].orEmpty().any { it in byName && it in q })
         }
         val available = scored.filter { it.first.inStock }
@@ -102,7 +116,7 @@ class DrinkAssistant(private val ai: AiTransport?, private val maxAiCalls: Int =
 
         aiCalls++
         val raw = runCatching { model.complete(SYSTEM, userMessage(q, options)) }.getOrNull()
-        val parsed = raw?.let { parseReply(it, options) }
+        val parsed = raw?.let { runCatching { parseReply(it, options) }.getOrNull() }
         return if (parsed != null) {
             synchronized(cache) { cache[key] = parsed }
             parsed
@@ -122,7 +136,7 @@ class DrinkAssistant(private val ai: AiTransport?, private val maxAiCalls: Int =
 
         /** Accepts the reply only if it names an in-stock drink; anything else returns null (caller falls back). */
         fun parseReply(raw: String, options: List<DrinkOption>): Recommendation? {
-            val body = Regex("\\{.*}", RegexOption.DOT_MATCHES_ALL).find(raw)?.value ?: return null
+            val body = Regex("\\{.*\\}", RegexOption.DOT_MATCHES_ALL).find(raw)?.value ?: return null
             val obj = runCatching { json.parseToJsonElement(body) as? kotlinx.serialization.json.JsonObject }.getOrNull() ?: return null
             val id = (obj["pick"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull() ?: return null
             val why = (obj["why"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.trim().orEmpty().take(140)

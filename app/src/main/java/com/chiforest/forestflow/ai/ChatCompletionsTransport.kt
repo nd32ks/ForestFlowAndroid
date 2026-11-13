@@ -25,6 +25,8 @@ class ChatCompletionsTransport(
     private val model: String,
     private val timeoutMs: Int = 8_000,
     private val jsonMode: Boolean = true,
+    /** "Authorization" sends `Bearer <key>`; any other name (e.g. Azure's "api-key") sends the raw key in that header. */
+    private val authHeader: String = "Authorization",
 ) : AiTransport {
     override suspend fun complete(system: String, user: String): String? = withContext(Dispatchers.IO) {
         val body = buildJsonObject {
@@ -44,7 +46,8 @@ class ChatCompletionsTransport(
             conn.readTimeout = timeoutMs
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/json")
-            conn.setRequestProperty("Authorization", "Bearer $apiKey")
+            if (authHeader.equals("Authorization", ignoreCase = true)) conn.setRequestProperty("Authorization", "Bearer $apiKey")
+            else conn.setRequestProperty(authHeader, apiKey)
             conn.outputStream.use { it.write(body.toByteArray()) }
             if (conn.responseCode !in 200..299) return@withContext null
             val text = conn.inputStream.bufferedReader().use { it.readText() }

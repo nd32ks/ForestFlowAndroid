@@ -6,6 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.chiforest.forestflow.feature.DropNotifier
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -106,6 +109,16 @@ fun AppRoot(vm: AppViewModel) {
     val view = LocalView.current
     val context = LocalContext.current
     val dispatch: (Action) -> Unit = vm::dispatch
+    // A notification waiting for the Android 13+ permission answer.
+    val pendingNotify = remember { arrayOfNulls<Effect.SystemNotify>(1) }
+    val notifyPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val p = pendingNotify[0]
+        pendingNotify[0] = null
+        if (p != null) {
+            if (granted) DropNotifier.post(context, p.title, p.body)
+            else toasts.show("Notifications are off for Forest Flow · turn them on in Settings", ToastIcon.Alert)
+        }
+    }
 
     LaunchedEffect(Unit) {
         vm.effects.collect { e ->
@@ -127,6 +140,12 @@ fun AppRoot(vm: AppViewModel) {
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                     )
                 }.onFailure { toasts.show("Sharing is unavailable on this device", ToastIcon.Alert) }
+                is Effect.SystemNotify -> if (DropNotifier.canPost(context)) {
+                    DropNotifier.post(context, e.title, e.body)
+                } else if (android.os.Build.VERSION.SDK_INT >= 33) {
+                    pendingNotify[0] = e
+                    notifyPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                }
                 else -> Unit
             }
         }
@@ -163,6 +182,7 @@ fun AppRoot(vm: AppViewModel) {
         SheetKind.Buildings -> BuildingsSheet(s, vm.mapData, dispatch)
         SheetKind.Layers -> LayersSheet(s, vm.mapData, dispatch)
         SheetKind.Stations -> StationsSheet(s, vm.mapData, dispatch)
+        SheetKind.Product -> com.chiforest.forestflow.feature.customer.ProductSheet(s, vm.mapData, dispatch)
         SheetKind.Redeem -> RedeemSheet(s, dispatch)
         SheetKind.Qr -> QrSheet(s, vm.mapData, dispatch)
         SheetKind.Cas -> CasSheet(s, vm.authBackend, vm::casSubmit, dispatch)
@@ -203,12 +223,14 @@ private fun RoleShell(s: AppState, now: State<Long>, role: Role, vm: AppViewMode
                 } else when (t) {
                     0 -> TelemetryScreen(s, vm::clock, dispatch)
                     1 -> DispatchScreen(s, vm::clock, dispatch)
-                    else -> AlertsScreen(s, dispatch)
+                    2 -> AlertsScreen(s, dispatch)
+                    else -> com.chiforest.forestflow.feature.supplier.StockScreen(s, map, dispatch)
                 }
             }
         }
 
         val subtitle = when {
+            !student && tab == 3 -> "All stations · Taicang + SIP"
             !student -> "Node 01 Admin · Taicang"
             tab == 1 -> map.campus(s.campusId).subtitle
             else -> {
@@ -241,6 +263,7 @@ private fun RoleShell(s: AppState, now: State<Long>, role: Role, vm: AppViewMode
                     NavItem(Ic.BarChart, "Telemetry"),
                     NavItem(Ic.Truck, "Dispatch"),
                     NavItem(Ic.Bell, "Alerts", count = s.aBadge),
+                    NavItem(Ic.Box, "Stock"),
                 )
                 val selected = if (student) studentTabs.indexOf(tab).coerceAtLeast(0) else tab
                 GlassNavBar(haze, items, selected, { i -> dispatch(Action.Tab(if (student) studentTabs[i] else i)) })

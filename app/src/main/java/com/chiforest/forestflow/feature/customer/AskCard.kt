@@ -73,8 +73,15 @@ fun AskCard(options: List<DrinkOption>, watching: Boolean, onNotify: () -> Unit)
         focus.clearFocus()
         loading = true
         scope.launch {
-            result = assistant.recommend(text, options)
-            loading = false
+            try {
+                result = assistant.recommend(text, options)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                result = Recommendation(null, "Couldn't reach the assistant. Try again in a moment.", Recommendation.Source.Quick)
+            } finally {
+                loading = false
+            }
         }
     }
 

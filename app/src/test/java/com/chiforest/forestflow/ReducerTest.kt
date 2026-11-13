@@ -2,6 +2,7 @@ package com.chiforest.forestflow
 
 import com.chiforest.forestflow.core.Action
 import com.chiforest.forestflow.core.AppState
+import com.chiforest.forestflow.core.Clearance
 import com.chiforest.forestflow.core.Effect
 import com.chiforest.forestflow.core.Escrow
 import com.chiforest.forestflow.core.MapData
@@ -315,9 +316,78 @@ class ReducerTest {
         assertTrue(effects(s, Action.CallRunner).any { it is Effect.Toast })
     }
 
-    @Test fun approve_and_decline_clearance() {
-        assertEquals("approved", fresh(supplier).go(Action.Approve("13:30")).supplier.clearance)
-        assertEquals("dismissed", fresh(supplier).go(Action.Decline).supplier.clearance)
+    @Test fun clearance_suggests_slowest_seller_over_threshold() {
+        val c = Clearance.candidate(fresh(supplier).supplier)
+        assertNotNull(c)
+        // Barley: 14 cans at 3 cans/h is the slowest product in the seed data
+        assertEquals("Barley", c!!.name)
+        assertTrue(c.hours > Clearance.THRESHOLD_HOURS)
+        assertEquals(4.4, Clearance.salePrice(5.5), 0.001)
+    }
+
+    @Test fun approve_marks_down_then_end_restores() {
+        val s = fresh(supplier).go(Action.Approve("13:30"))
+        assertEquals(4.4, s.supplier.prices["Barley"]!!, 0.001)
+        assertEquals(listOf("Barley"), Clearance.live(s.supplier).map { it.name })
+        assertTrue(Clearance.candidate(s.supplier)?.name != "Barley")
+        assertEquals("Clearance −20% Approved", s.supplier.feed.first().title)
+        val ended = s.go(Action.EndClearance("Barley", "13:40"))
+        assertTrue("Barley" !in ended.supplier.prices)
+        assertTrue(Clearance.live(ended.supplier).isEmpty())
+    }
+
+    @Test fun decline_hides_only_that_product() {
+        val s = fresh(supplier).go(Action.Decline)
+        assertEquals("Barley", s.supplier.clearanceDismissed)
+        assertTrue(Clearance.candidate(s.supplier)?.name != "Barley")
+    }
+
+    @Test fun surge_speeds_up_selling_so_fewer_products_qualify() {
+        val calm = Clearance.lines(fresh(supplier).supplier).count { it.hours > Clearance.THRESHOLD_HOURS }
+        val busy = Clearance.lines(fresh(supplier).go(Action.Surge("13:50")).supplier).count { it.hours > Clearance.THRESHOLD_HOURS }
+        assertTrue(busy < calm)
+    }
+
+    @Test fun tapping_a_drink_opens_its_details() {
+        val s = fresh().go(Action.ProductDetails("Green Tea"))
+        assertEquals(SheetKind.Product, s.sheet)
+        assertEquals("Green Tea", s.productKey)
+        assertNull(s.go(Action.CloseSheet).sheet)
+    }
+
+    @Test fun inventory_products_have_stock_and_photos_everywhere() {
+        assertEquals(11, Seed.products.size)
+        assertEquals(Seed.products.size, Seed.products.map { it.coil }.toSet().size)
+        map.allNodes.forEach { n -> Seed.products.forEach { p -> assertTrue("${n.id} ${p.key}", p.key in n.ready) } }
+    }
+
+    @Test fun unconfirmed_nutrition_is_left_blank_not_guessed() {
+        assertEquals(50, Regex("\\d+").find(Seed.product("Red Bull")!!.info.caffeine)!!.value.toInt())
+        assertNull(Seed.product("Red Bull")!!.info.sugarG)
+        assertEquals(0.0, Seed.product("Grape")!!.info.sugarG!!, 0.0)
+    }
+
+    @Test fun watch_any_drink_posts_a_phone_notification() {
+        val s = fresh().go(Action.Watch("Grape"))
+        assertEquals(listOf("Grape"), s.customer.watch)
+        assertTrue(effects(fresh(), Action.Watch("Grape")).any { it is Effect.SystemNotify })
+        assertTrue(s.go(Action.Watch("Grape")).customer.watch.isEmpty())
+        assertFalse(effects(s, Action.Watch("Grape")).any { it is Effect.SystemNotify })
+    }
+
+    @Test fun watching_osmanthus_keeps_both_flags_in_sync() {
+        val s = fresh().go(Action.Watch("Osmanthus"))
+        assertTrue(s.customer.osmanthusWatch)
+        val off = s.go(Action.Notify)
+        assertFalse(off.customer.osmanthusWatch)
+        assertTrue("Osmanthus" !in off.customer.watch)
+    }
+
+    @Test fun drop_alerts_one_tap() {
+        val s = fresh().go(Action.DropAlerts)
+        assertTrue(s.customer.dropAlerts)
+        assertTrue(effects(fresh(), Action.DropAlerts).any { it is Effect.SystemNotify })
+        assertFalse(s.go(Action.DropAlerts).customer.dropAlerts)
     }
 
     @Test fun surge_updates_metrics() {

@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chiforest.forestflow.R
 import com.chiforest.forestflow.core.Action
+import com.chiforest.forestflow.core.Clearance
 import com.chiforest.forestflow.core.AppState
 import com.chiforest.forestflow.core.Coil
 import com.chiforest.forestflow.core.FeedEvent
@@ -361,45 +362,52 @@ fun DispatchScreen(s: AppState, clock: () -> String, dispatch: (Action) -> Unit)
             ManifestRow("Green Tea", "Green Tea Zero Sugar · C4", "Coil C4 · 1 Case (24 cans)", sp.coil("C4"))
         }
 
-        // dynamic clearance
-        AnimatedVisibility(sp.clearance != "dismissed", enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
-            if (sp.clearance == "approved") {
-                Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(c.greenTint).border(1.dp, c.green.copy(alpha = 0.3f), RoundedCornerShape(22.dp)).padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Ic.CheckCircle, null, tint = c.green, modifier = Modifier.size(24.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Text("Price cut live · ¥4.40", style = Type.title(15.sp, 800), color = c.green)
-                        Text("E-Ink shelf tags updated on Coil C3 (was ¥5.50)", style = Type.body(12.sp), color = c.muted)
-                    }
+        // dynamic clearance: live markdowns, then the next suggestion (slowest seller over the threshold)
+        Clearance.live(sp).forEach { l ->
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(c.greenTint).border(1.dp, c.green.copy(alpha = 0.3f), RoundedCornerShape(22.dp)).padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Ic.CheckCircle, null, tint = c.green, modifier = Modifier.size(24.dp))
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Price cut live · ${l.name} ${Clearance.yuan(l.price)}", style = Type.title(15.sp, 800), color = c.green)
+                    Text("List ${Clearance.yuan(Clearance.LIST_PRICE)} · ${l.stock} cans · ${Clearance.hoursLabel(l.hours)}", style = Type.body(12.sp), color = c.muted)
                 }
-            } else {
+                ForestButton("End", { dispatch(Action.EndClearance(l.name, clock())) }, small = true, style = BtnStyle.Outline)
+            }
+        }
+        val cand = Clearance.candidate(sp)
+        AnimatedVisibility(cand != null, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+            if (cand != null) {
+                val to = Clearance.salePrice(cand.price)
                 ForestCard(Modifier.fillMaxWidth().border(1.5.dp, c.amber.copy(alpha = 0.35f), RoundedCornerShape(26.dp)), radius = 26.dp) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Ic.Tag, null, tint = c.amber, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("DYNAMIC CLEARANCE TRIGGERED", style = Type.eyebrow(10.sp), color = c.amber, modifier = Modifier.weight(1f))
-                        Pill("Coil C3", c.ink, c.surface2)
+                        Text("DYNAMIC CLEARANCE SUGGESTED", style = Type.eyebrow(10.sp), color = c.amber, modifier = Modifier.weight(1f))
+                        Pill("Coil ${cand.coils.joinToString(", ")}", c.ink, c.surface2)
                     }
                     Spacer(Modifier.height(10.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        ProductArt("Osmanthus", Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)))
+                        ProductArt(cand.name, Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)))
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("Osmanthus Plum Sparkling", style = Type.title(15.sp, 800), color = c.ink)
+                            Text(cand.name, style = Type.title(15.sp, 800), color = c.ink)
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("¥5.50", style = Type.num(13.sp, 600).copy(textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough), color = c.faint)
+                                Text(Clearance.yuan(cand.price), style = Type.num(13.sp, 600).copy(textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough), color = c.faint)
                                 Spacer(Modifier.width(6.dp))
-                                Text("¥4.40", style = Type.num(17.sp, 800), color = c.red)
+                                Text(Clearance.yuan(to), style = Type.num(17.sp, 800), color = c.red)
                                 Spacer(Modifier.width(6.dp))
-                                Pill("−20%", c.red, c.redTint)
+                                Pill("−${Clearance.DISCOUNT_PCT}%", c.red, c.redTint)
                             }
                         }
                     }
                     Spacer(Modifier.height(8.dp))
-                    Text("Slow-moving item detected. Automated price markdown suggested to purge remaining coil C3 inventory prior to incoming tea stock.", style = Type.body(12.sp), color = c.muted)
+                    Text(
+                        "Slowest seller: ${cand.stock} cans, ${Clearance.hoursLabel(cand.hours)} at the current rate (threshold ${Clearance.THRESHOLD_HOURS.toInt()} h).",
+                        style = Type.body(12.sp), color = c.muted,
+                    )
                     Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         ForestButton("Approve Price Cut", { dispatch(Action.Approve(clock())) }, Modifier.weight(1f), icon = Ic.Check)
@@ -678,6 +686,76 @@ private fun EventCard(ev: FeedEvent) {
                 Spacer(Modifier.height(8.dp))
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     ev.chips.forEach { Pill(it, c.muted, c.surface2) }
+                }
+            }
+        }
+    }
+}
+
+/** Every station on both campuses, emptiest first, with per-flavour stock. Same view as the Softr Supplier Stock page. */
+@Composable
+fun StockScreen(s: AppState, map: com.chiforest.forestflow.core.MapData, dispatch: (Action) -> Unit) {
+    val c = FF.c
+    val campus = s.campusId.takeIf { id -> map.campuses.any { it.id == id } }
+    val nodes = (if (campus == null) map.allNodes else map.campus(campus).nodes).sortedBy { it.pct }
+    val keys = com.chiforest.forestflow.core.Seed.products.map { it.key }
+    val low = 3
+    ScreenColumn {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            map.campuses.forEach { cp ->
+                val on = cp.id == s.campusId
+                Text(
+                    cp.name, style = Type.body(12.sp, 700), color = if (on) Color.White else c.muted,
+                    modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) c.ink else c.surface)
+                        .pressable(scaleTo = 0.95f, label = "Show ${cp.name}") { dispatch(Action.StockCampus(cp.id)) }
+                        .padding(horizontal = 14.dp, vertical = 7.dp),
+                )
+            }
+        }
+        val totalLow = nodes.sumOf { n -> keys.count { (n.ready[it] ?: 0) <= low } }
+        ForestCard(Modifier.fillMaxWidth(), radius = 26.dp) {
+            Text("${nodes.size} STATIONS · $totalLow LOW FLAVOUR SLOTS", style = Type.eyebrow(10.sp), color = c.faint)
+            Spacer(Modifier.height(8.dp))
+            keys.chunked(4).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(vertical = 3.dp)) {
+                    row.forEach { k ->
+                        Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(c.surface2).padding(8.dp)) {
+                            Text(k, style = Type.body(10.sp, 600), color = c.faint, maxLines = 1)
+                            Text("${nodes.sumOf { it.ready[k] ?: 0 }}", style = Type.num(16.sp, 800), color = c.ink)
+                        }
+                    }
+                }
+            }
+        }
+        nodes.forEach { n ->
+            ForestCard(Modifier.fillMaxWidth(), radius = 22.dp) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("${n.shortName} · ${n.label}", style = Type.title(14.sp, 800), color = c.ink, maxLines = 1)
+                        Text("Bldg ${n.building} · ${n.location}", style = Type.body(11.sp), color = c.faint, maxLines = 1)
+                    }
+                    Pill(if (n.isLow) "low" else "online", if (n.isLow) c.amber else c.green, if (n.isLow) c.amberTint else c.greenTint)
+                }
+                Spacer(Modifier.height(8.dp))
+                Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(c.surface2)) {
+                    Box(Modifier.fillMaxWidth(n.pct.coerceIn(0, 100) / 100f).height(6.dp).background(if (n.pct < 40) c.red else c.green))
+                }
+                Text("${n.pct}% full · ${n.tempC}°C", style = Type.body(11.sp), color = c.faint, modifier = Modifier.padding(top = 4.dp))
+                Spacer(Modifier.height(6.dp))
+                keys.chunked(4).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(vertical = 3.dp)) {
+                        row.forEach { k ->
+                            val v = n.ready[k] ?: 0
+                            val isLow = v <= low
+                            Column(
+                                Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(if (isLow) c.redTint else c.surface2).padding(vertical = 6.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Text("$v", style = Type.num(15.sp, 800), color = if (isLow) c.red else c.ink)
+                                Text(k, style = Type.body(9.sp, 600), color = c.faint, maxLines = 1)
+                            }
+                        }
+                    }
                 }
             }
         }

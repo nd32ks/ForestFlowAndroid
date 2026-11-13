@@ -81,17 +81,7 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
                 listOf(Effect.Toast("Coil #0${a.coil} · ${node?.shortName ?: ""} highlighted on map", ToastIcon.Navigation), Effect.Haptic()),
             )
         }
-        Action.Notify -> {
-            val on = !s.customer.osmanthusWatch
-            Next(
-                s.copy(customer = s.customer.copy(osmanthusWatch = on)),
-                listOf(
-                    Effect.Toast(if (on) "Subscribed · we'll ping you when Osmanthus Plum lands" else "Osmanthus Plum alert removed", ToastIcon.Bell),
-                    Effect.Haptic(),
-                    Effect.Log("notify", if (on) "subscribe osmanthus" else "unsubscribe osmanthus"),
-                ),
-            )
-        }
+        Action.Notify -> watch(s, "Osmanthus")
         Action.Release -> if (s.customer.escrow == null) Next(s) else Next(
             s.copy(customer = s.customer.copy(escrow = null)),
             listOf(Effect.Toast("Coil released back to the shelf", ToastIcon.Lock), Effect.Haptic(strong = true), Effect.Log("release", s.customer.escrow.product)),
@@ -175,7 +165,7 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
         Action.LiveStatus -> Next(s, listOf(Effect.Toast("Node 01 · Coil #04 restocking today 14:30 · runner Zhang en route", ToastIcon.Bolt)))
         is Action.Unsub -> {
             val c = s.customer
-            val next = if (a.which == "osmanthus") c.copy(osmanthusWatch = false) else c.copy(peachWatch = false)
+            val next = if (a.which == "osmanthus") c.copy(osmanthusWatch = false, watch = c.watch - "Osmanthus") else c.copy(peachWatch = false)
             Next(s.copy(customer = next), listOf(Effect.Toast("Unsubscribed", ToastIcon.Bell), Effect.Haptic(), Effect.Log("unsub", a.which)))
         }
         Action.PushAlert -> {
@@ -255,16 +245,37 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
             )
         }
         Action.CallRunner -> Next(s, listOf(Effect.Toast("Calling Zhang · Logistics 02…", ToastIcon.Info), Effect.Haptic()))
-        is Action.Approve -> {
+        is Action.Approve -> approveClearance(s, a.clock)
+        Action.Decline -> {
+            val name = Clearance.candidate(s.supplier)?.name ?: ""
+            Next(s.copy(supplier = s.supplier.copy(clearance = "dismissed", clearanceDismissed = name)), listOf(Effect.Toast("Clearance suggestion dismissed"), Effect.Haptic()))
+        }
+        is Action.EndClearance -> {
             val sp = s.supplier
-            val ev = event(sp, FeedType.Clearance, "Clearance −20% Approved", "Osmanthus Plum", a.clock,
-                "Price adjusted to ¥4.40 across digital shelf tags.", listOf("E-Ink Shelf Updated", "Old Price ¥5.50"))
+            if (a.name !in sp.prices) Next(s) else {
+                val ev = event(sp, FeedType.Clearance, "Clearance Ended", a.name, a.clock,
+                    "${a.name} back to ${Clearance.yuan(Clearance.LIST_PRICE)} on digital shelf tags.", listOf("E-Ink Shelf Updated"))
+                Next(
+                    s.copy(supplier = sp.copy(prices = sp.prices - a.name, feed = listOf(ev) + sp.feed, eventSeq = sp.eventSeq + 1)),
+                    listOf(Effect.Toast("${a.name} back to ${Clearance.yuan(Clearance.LIST_PRICE)}", ToastIcon.Check), Effect.Haptic(), Effect.Log("endClearance", a.name)),
+                )
+            }
+        }
+        is Action.Watch -> watch(s, a.key)
+        Action.DropAlerts -> {
+            val on = !s.customer.dropAlerts
+            val names = Seed.drops.joinToString(", ") { it.name }
             Next(
-                s.copy(supplier = sp.copy(clearance = "approved", feed = listOf(ev) + sp.feed, eventSeq = sp.eventSeq + 1)),
-                listOf(Effect.Toast("Price cut to ¥4.40 approved", ToastIcon.Check), Effect.Haptic(), Effect.Log("approve", "¥4.40")),
+                s.copy(customer = s.customer.copy(dropAlerts = on)),
+                if (on) listOf(
+                    Effect.Toast("Drop alerts on · we'll notify your phone", ToastIcon.Bell), Effect.Haptic(),
+                    Effect.SystemNotify("Product drop alerts are on", "Coming up: $names. You'll get a notification when each one lands."),
+                    Effect.Log("dropAlerts", "on"),
+                ) else listOf(Effect.Toast("Drop alerts off", ToastIcon.Bell), Effect.Haptic(), Effect.Log("dropAlerts", "off")),
             )
         }
-        Action.Decline -> Next(s.copy(supplier = s.supplier.copy(clearance = "dismissed")), listOf(Effect.Toast("Clearance suggestion dismissed"), Effect.Haptic()))
+        is Action.ProductDetails -> Next(s.copy(sheet = SheetKind.Product, productKey = a.key), listOf(Effect.Haptic()))
+        is Action.StockCampus -> Next(s.copy(campusId = a.campusId), listOf(Effect.Haptic()))
         is Action.Surge -> {
             val sp = s.supplier
             val ev = event(sp, FeedType.Surge, "Foot-Traffic Surge", "450 students · Hall G", a.clock,
@@ -330,6 +341,37 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
         s.copy(shakeField = field, shakeNonce = s.shakeNonce + 1),
         listOf(Effect.Toast(msg, ToastIcon.Alert), Effect.Haptic(strong = true)),
     )
+
+    private fun watch(s: AppState, key: String): Next {
+        val p = Seed.product(key) ?: return Next(s)
+        val c = s.customer
+        val on = if (key == "Osmanthus") !c.osmanthusWatch else key !in c.watch
+        val next = c.copy(
+            watch = if (on) (c.watch - key) + key else c.watch - key,
+            osmanthusWatch = if (key == "Osmanthus") on else c.osmanthusWatch,
+        )
+        return Next(
+            s.copy(customer = next),
+            if (on) listOf(
+                Effect.Toast("Subscribed · we'll notify your phone when ${p.name} is back", ToastIcon.Bell), Effect.Haptic(),
+                Effect.SystemNotify("Following ${p.name}", "You'll get a notification here as soon as ${p.name} is restocked near you."),
+                Effect.Log("watch", "on $key"),
+            ) else listOf(Effect.Toast("${p.name} alert removed", ToastIcon.Bell), Effect.Haptic(), Effect.Log("watch", "off $key")),
+        )
+    }
+
+    private fun approveClearance(s: AppState, clock: String): Next {
+        val sp = s.supplier
+        val c = Clearance.candidate(sp) ?: return Next(s, listOf(Effect.Toast("No slow-moving product to mark down")))
+        val to = Clearance.salePrice(c.price)
+        val ev = event(sp, FeedType.Clearance, "Clearance −${Clearance.DISCOUNT_PCT}% Approved", c.name, clock,
+            "${c.name} cut to ${Clearance.yuan(to)} on digital shelf tags. ${c.stock} cans left, ${Clearance.hoursLabel(c.hours)}.",
+            listOf("E-Ink Shelf Updated", "Old Price ${Clearance.yuan(c.price)}"))
+        return Next(
+            s.copy(supplier = sp.copy(clearance = "approved", prices = sp.prices + (c.name to to), feed = listOf(ev) + sp.feed, eventSeq = sp.eventSeq + 1)),
+            listOf(Effect.Toast("${c.name} now ${Clearance.yuan(to)}", ToastIcon.Check), Effect.Haptic(), Effect.Log("approve", "${c.name} ${Clearance.yuan(to)}")),
+        )
+    }
 
     private fun tab(s: AppState, index: Int): Next {
         val role = s.session?.role ?: return Next(s)

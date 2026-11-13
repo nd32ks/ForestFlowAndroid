@@ -45,6 +45,7 @@ android {
         // Drink assistant: any OpenAI-style chat endpoint. Leave ai.key empty and the app uses its offline matcher only.
         buildConfigField("String", "AI_KEY", "\"${supabaseSetting("ai.key", "FF_AI_KEY")}\"")
         buildConfigField("String", "AI_ENDPOINT", "\"${supabaseSetting("ai.endpoint", "FF_AI_ENDPOINT").ifBlank { "https://api.deepseek.com/chat/completions" }}\"")
+        buildConfigField("String", "AI_AUTH_HEADER", "\"${supabaseSetting("ai.authHeader", "FF_AI_AUTH_HEADER").ifBlank { "Authorization" }}\"")
         buildConfigField("String", "AI_MODEL", "\"${supabaseSetting("ai.model", "FF_AI_MODEL").ifBlank { "deepseek-chat" }}\"")
     }
 

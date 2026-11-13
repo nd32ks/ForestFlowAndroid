@@ -31,7 +31,7 @@ class AppContainer(context: Context) {
 
     /** Free-text drink picker. Uses the model when an AI key was built in, otherwise only the offline matcher. */
     val assistant = DrinkAssistant(
-        if (BuildConfig.AI_KEY.isNotBlank()) ChatCompletionsTransport(BuildConfig.AI_ENDPOINT, BuildConfig.AI_KEY, BuildConfig.AI_MODEL) else null,
+        if (BuildConfig.AI_KEY.isNotBlank()) ChatCompletionsTransport(BuildConfig.AI_ENDPOINT, BuildConfig.AI_KEY, BuildConfig.AI_MODEL, authHeader = BuildConfig.AI_AUTH_HEADER) else null,
     )
 
     val auth: AuthRepository = supabase ?: localAuth

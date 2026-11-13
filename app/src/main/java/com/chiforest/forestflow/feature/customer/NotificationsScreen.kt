@@ -82,6 +82,8 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
             }
         }
 
+        DropAlertsBar(cu.dropAlerts) { dispatch(Action.DropAlerts) }
+
         // ---------------- watchlist
         if (nf == "all" || nf == "restocks") {
             val active = listOf(cu.osmanthusWatch, cu.peachWatch).count { it }

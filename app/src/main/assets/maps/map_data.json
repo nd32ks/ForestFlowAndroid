@@ -246,7 +246,15 @@
      "ready": {
       "White Peach": 6,
       "Lychee": 1,
-      "Calamansi": 8
+      "Calamansi": 8,
+      "Grape": 5,
+      "Green Tea": 7,
+      "Electro": 4,
+      "Osmanthus": 0,
+      "Mango": 4,
+      "Monster": 6,
+      "Red Bull": 3,
+      "Ice Tea": 2
      },
      "demo": true
     },
@@ -270,7 +278,14 @@
       "White Peach": 9,
       "Lychee": 7,
       "Calamansi": 5,
-      "Osmanthus": 3
+      "Osmanthus": 3,
+      "Grape": 3,
+      "Green Tea": 2,
+      "Electro": 8,
+      "Mango": 7,
+      "Monster": 0,
+      "Red Bull": 5,
+      "Ice Tea": 6
      },
      "demo": true
     },
@@ -293,7 +308,15 @@
      "ready": {
       "White Peach": 3,
       "Lychee": 0,
-      "Calamansi": 2
+      "Calamansi": 2,
+      "Grape": 0,
+      "Green Tea": 5,
+      "Electro": 2,
+      "Osmanthus": 0,
+      "Mango": 2,
+      "Monster": 4,
+      "Red Bull": 0,
+      "Ice Tea": 3
      },
      "demo": true
     },
@@ -316,7 +339,15 @@
      "ready": {
       "White Peach": 4,
       "Lychee": 5,
-      "Calamansi": 6
+      "Calamansi": 6,
+      "Grape": 6,
+      "Green Tea": 0,
+      "Electro": 5,
+      "Osmanthus": 0,
+      "Mango": 5,
+      "Monster": 3,
+      "Red Bull": 4,
+      "Ice Tea": 0
      },
      "demo": true
     },
@@ -340,7 +371,14 @@
       "White Peach": 7,
       "Lychee": 4,
       "Calamansi": 9,
-      "Osmanthus": 2
+      "Osmanthus": 2,
+      "Grape": 2,
+      "Green Tea": 4,
+      "Electro": 6,
+      "Mango": 6,
+      "Monster": 5,
+      "Red Bull": 2,
+      "Ice Tea": 4
      },
      "demo": true
     },
@@ -363,7 +401,15 @@
      "ready": {
       "White Peach": 1,
       "Lychee": 2,
-      "Calamansi": 0
+      "Calamansi": 0,
+      "Grape": 1,
+      "Green Tea": 3,
+      "Electro": 0,
+      "Osmanthus": 0,
+      "Mango": 0,
+      "Monster": 2,
+      "Red Bull": 1,
+      "Ice Tea": 3
      },
      "demo": true
     }
@@ -651,7 +697,14 @@
       "White Peach": 8,
       "Lychee": 6,
       "Calamansi": 7,
-      "Osmanthus": 4
+      "Osmanthus": 4,
+      "Grape": 4,
+      "Green Tea": 6,
+      "Electro": 3,
+      "Mango": 3,
+      "Monster": 7,
+      "Red Bull": 6,
+      "Ice Tea": 5
      },
      "demo": true
     },
@@ -674,7 +727,15 @@
      "ready": {
       "White Peach": 5,
       "Lychee": 2,
-      "Calamansi": 4
+      "Calamansi": 4,
+      "Grape": 7,
+      "Green Tea": 1,
+      "Electro": 4,
+      "Osmanthus": 0,
+      "Mango": 4,
+      "Monster": 1,
+      "Red Bull": 3,
+      "Ice Tea": 2
      },
      "demo": true
     },
@@ -697,7 +758,15 @@
      "ready": {
       "White Peach": 6,
       "Lychee": 3,
-      "Calamansi": 5
+      "Calamansi": 5,
+      "Grape": 2,
+      "Green Tea": 5,
+      "Electro": 0,
+      "Osmanthus": 0,
+      "Mango": 5,
+      "Monster": 3,
+      "Red Bull": 0,
+      "Ice Tea": 6
      },
      "demo": true
     },
@@ -721,7 +790,14 @@
       "White Peach": 5,
       "Lychee": 4,
       "Calamansi": 3,
-      "Osmanthus": 1
+      "Osmanthus": 1,
+      "Grape": 5,
+      "Green Tea": 3,
+      "Electro": 6,
+      "Mango": 2,
+      "Monster": 4,
+      "Red Bull": 5,
+      "Ice Tea": 1
      },
      "demo": true
     },
@@ -744,7 +820,15 @@
      "ready": {
       "White Peach": 2,
       "Lychee": 1,
-      "Calamansi": 0
+      "Calamansi": 0,
+      "Grape": 0,
+      "Green Tea": 1,
+      "Electro": 3,
+      "Osmanthus": 0,
+      "Mango": 1,
+      "Monster": 0,
+      "Red Bull": 2,
+      "Ice Tea": 3
      },
      "demo": true
     }

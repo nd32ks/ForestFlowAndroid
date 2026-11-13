@@ -35,6 +35,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chiforest.forestflow.core.Action
+import com.chiforest.forestflow.core.Clearance
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.chiforest.forestflow.ui.components.ForestSheet
+import com.chiforest.forestflow.ui.components.SheetTitle
 import com.chiforest.forestflow.ai.DrinkCatalog
 import com.chiforest.forestflow.core.Escrow
 import com.chiforest.forestflow.core.RestockEta
@@ -92,11 +98,13 @@ fun InventoryScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Acti
             }
         }
 
+        DropAlertsBar(s.customer.dropAlerts) { dispatch(Action.DropAlerts) }
+
         AskCard(DrinkCatalog.options(Seed.products, node.ready), s.customer.osmanthusWatch) { dispatch(Action.Notify) }
 
         Column {
             Eyebrow("Tray Coil Inventory") {
-                Pill("4 Slots", c.ink, c.surface)
+                Pill("${Seed.products.size} Slots", c.ink, c.surface)
                 Spacer(Modifier.width(6.dp))
                 Pill("${node.tempC}°C ${if (node.tempC < 4f) "Hyper-Cool" else "Chilled"}", if (node.tempC < 4f) c.blue else c.amber, if (node.tempC < 4f) c.blueTint else c.amberTint, icon = Ic.Snow)
             }
@@ -107,7 +115,7 @@ fun InventoryScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Acti
                     row.forEach { p ->
                         val count = node.ready[p.key] ?: 0
                         val eta = if (count <= 0) RestockEta.forNode(node.id, s.supplier)?.label else null
-                        CoilCard(p, count, s.customer.osmanthusWatch, Modifier.weight(1f), dispatch, eta)
+                        CoilCard(p, count, isWatching(s, p.key), Modifier.weight(1f), dispatch, eta)
                     }
                 }
                 Spacer(Modifier.height(12.dp))
@@ -165,7 +173,7 @@ private fun QuickAction(icon: ImageVector, label: String, modifier: Modifier, ac
 private fun CoilCard(p: Product, count: Int, watching: Boolean, modifier: Modifier, dispatch: (Action) -> Unit, eta: String? = null) {
     val c = FF.c
     val out = count <= 0
-    Column(modifier.softCard(RoundedCornerShape(22.dp))) {
+    Column(modifier.softCard(RoundedCornerShape(22.dp)).pressable(scaleTo = 0.97f, label = "${p.name} details") { dispatch(Action.ProductDetails(p.key)) }) {
         Box(Modifier.fillMaxWidth().aspectRatio(1.25f).clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))) {
             ProductArt(p.key, Modifier.matchParentSize(), outOfStock = out)
             Text(
@@ -193,16 +201,9 @@ private fun CoilCard(p: Product, count: Int, watching: Boolean, modifier: Modifi
                 Text(eta, style = Type.body(10.sp, 600), color = c.amber)
             }
             Spacer(Modifier.height(10.dp))
-            if (out && p.key != "Osmanthus" && !Features.campusMap) {
-                // no station list without the map: the RESTOCKING pill above says it all
-            } else if (out && p.key != "Osmanthus") {
+            if (out) {
                 ForestButton(
-                    "Other Nodes", { dispatch(Action.OpenSheet(SheetKind.Stations)) }, Modifier.fillMaxWidth(),
-                    small = true, style = BtnStyle.Outline, icon = Ic.Vending,
-                )
-            } else if (out) {
-                ForestButton(
-                    if (watching) "Subscribed" else "Notify Me", { dispatch(Action.Notify) }, Modifier.fillMaxWidth(),
+                    if (watching) "Subscribed" else "Notify Me", { dispatch(Action.Watch(p.key)) }, Modifier.fillMaxWidth(),
                     small = true, style = if (watching) BtnStyle.Green else BtnStyle.Tonal, icon = if (watching) Ic.Check else Ic.Bell,
                 )
             } else if (Features.campusMap) {
@@ -218,4 +219,101 @@ private fun CoilCard(p: Product, count: Int, watching: Boolean, modifier: Modifi
 @Composable
 private fun HoldLeft(e: Escrow, now: State<Long>) {
     Text("Hold ${mmss(e.holdLeftMs(now.value))}", style = Type.mono(13.sp, 700), color = Color(0xFFFFB4AC))
+}
+
+/** Opened by tapping a drink card: what the drink is, what it tastes like, and where to find it. */
+@Composable
+fun ProductSheet(s: AppState, map: MapData, dispatch: (Action) -> Unit) {
+    val c = FF.c
+    val p = Seed.product(s.productKey) ?: return
+    val node = map.node(s.activeNodeId) ?: map.allNodes.first()
+    val here = node.ready[p.key] ?: 0
+    val elsewhere = map.allNodes.filter { it.id != node.id && (it.ready[p.key] ?: 0) > 0 }.sortedBy { it.walkMin }
+    ForestSheet(onDismiss = { dispatch(Action.CloseSheet) }) {
+        SheetTitle(p.name, "${p.info.brand} · ${p.nameZh} · ${p.tags.first()}") { dispatch(Action.CloseSheet) }
+        Column(Modifier.fillMaxWidth().heightIn(max = 560.dp).verticalScroll(rememberScrollState())) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                ProductArt(p.key, Modifier.size(84.dp).clip(RoundedCornerShape(18.dp)), outOfStock = here <= 0)
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(Clearance.yuan(Clearance.LIST_PRICE), style = Type.num(22.sp, 800), color = c.ink)
+                    Spacer(Modifier.height(4.dp))
+                    if (here > 0) Pill("$here ready at ${node.shortName}", c.green, c.greenTint, dot = true)
+                    else Pill("Out of stock at ${node.shortName}", c.faint, c.surface2)
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+            Text(p.info.description, style = Type.body(14.sp), color = c.ink)
+            p.info.labelNote?.let {
+                Spacer(Modifier.height(6.dp))
+                Text(it, style = Type.body(12.sp, 600), color = c.muted)
+            }
+            Spacer(Modifier.height(14.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Fact("Sugar", p.info.sugarG?.let { if (it == 0.0) "0 g" else "$it g" } ?: "See label", Modifier.weight(1f))
+                Fact("Energy", p.info.kcal?.let { "$it kcal" } ?: "See label", Modifier.weight(1f))
+                Fact("Caffeine", p.info.caffeine, Modifier.weight(1.2f))
+            }
+            Spacer(Modifier.height(14.dp))
+            Text("TASTE", style = Type.eyebrow(10.sp), color = c.faint)
+            Spacer(Modifier.height(4.dp))
+            Text(p.info.notes, style = Type.body(13.sp, 600), color = c.muted)
+            Spacer(Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) { p.tags.forEach { Pill(it, c.muted, c.surface2) } }
+            Spacer(Modifier.height(16.dp))
+            Text("ALSO IN STOCK AT", style = Type.eyebrow(10.sp), color = c.faint)
+            Spacer(Modifier.height(4.dp))
+            if (elsewhere.isEmpty()) Text("No other station has it right now.", style = Type.body(13.sp), color = c.faint)
+            elsewhere.take(4).forEach { n ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("${n.shortName} · ${n.label}", style = Type.body(13.sp, 600), color = c.ink, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("${n.ready[p.key]} · ${n.walkMin} min", style = Type.mono(12.sp, 600), color = c.faint)
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+            val following = isWatching(s, p.key)
+            ForestButton(
+                if (following) "Following · tap to stop alerts" else "Notify me when it's restocked", { dispatch(Action.Watch(p.key)) },
+                Modifier.fillMaxWidth(), style = if (following) BtnStyle.Green else BtnStyle.Primary, icon = if (following) Ic.Check else Ic.Bell,
+            )
+            Spacer(Modifier.height(10.dp))
+            Text("Per container, from the label or brand. \"See label\" means we could not confirm the figure.", style = Type.body(11.sp), color = c.faint)
+        }
+    }
+}
+
+@Composable
+private fun Fact(label: String, value: String, modifier: Modifier) {
+    val c = FF.c
+    Column(modifier.clip(RoundedCornerShape(14.dp)).background(c.surface2).padding(horizontal = 10.dp, vertical = 8.dp)) {
+        Text(label, style = Type.body(11.sp, 600), color = c.faint)
+        Text(value, style = Type.title(15.sp, 800), color = c.ink)
+    }
+}
+
+fun isWatching(s: AppState, key: String): Boolean =
+    key in s.customer.watch || (key == "Osmanthus" && s.customer.osmanthusWatch)
+
+/** One tap to get phone notifications for every new product drop. */
+@Composable
+fun DropAlertsBar(on: Boolean, onToggle: () -> Unit) {
+    val c = FF.c
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(if (on) c.greenTint else c.redTint)
+            .semantics { contentDescription = if (on) "Product drop alerts on" else "Turn on product drop alerts" }
+            .pressable(scaleTo = 0.98f, onClick = onToggle)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(if (on) Ic.Check else Ic.Bell, null, tint = if (on) c.green else c.red, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text(if (on) "Drop alerts on" else "Get drop alerts", style = Type.title(14.sp, 800), color = c.ink)
+            Text(
+                if (on) "Your phone will buzz when a new flavour lands" else "One tap · phone notification for every new flavour",
+                style = Type.body(11.sp), color = c.muted, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Text(if (on) "On" else "Turn on", style = Type.body(12.sp, 800), color = if (on) c.green else c.red)
+    }
 }

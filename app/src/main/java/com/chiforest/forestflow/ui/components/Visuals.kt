@@ -55,10 +55,17 @@ import kotlinx.coroutines.launch
 
 /** Real product photos where bundled (res/drawable-nodpi/can_*.jpg). */
 fun canPhoto(key: String): Int? = when (key.lowercase()) {
-    "white peach", "peach" -> R.drawable.can_white_peach
+    "white peach", "peach" -> R.drawable.can_white_peach_bottle
     "lychee", "lychee fizzy" -> R.drawable.can_lychee
     "calamansi", "calamansi lime", "kalamansi" -> R.drawable.can_calamansi
     "osmanthus", "osmanthus plum" -> R.drawable.can_osmanthus
+    "grape", "grape delight" -> R.drawable.can_grape_delight
+    "mango", "sunny mango" -> R.drawable.can_sunny_mango
+    "electro" -> R.drawable.can_alienergy_grapefruit
+    "monster" -> R.drawable.can_monster_ultra
+    "red bull" -> R.drawable.can_red_bull_cn
+    "ice tea" -> R.drawable.can_ice_red_tea
+    "green tea" -> R.drawable.can_leaf_green_tea
     else -> null
 }
 

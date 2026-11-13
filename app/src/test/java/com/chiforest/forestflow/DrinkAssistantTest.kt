@@ -130,4 +130,11 @@ class DrinkAssistantTest {
         assertEquals(0, eta(2, confirmed = true)?.minutes)
         assertNull(RestockEta.forNode("N02", SupplierState()))
     }
+
+    @Test fun parses_a_real_model_reply_with_braces() {
+        val opts = DrinkCatalog.options(Seed.products, mapOf("Monster" to 3, "Red Bull" to 2))
+        val r = DrinkAssistant.parseReply("{\"pick\":8,\"why\":\"Zero sugar caffeine for a late night\"}", opts)
+        org.junit.Assert.assertEquals("Monster", r?.option?.key)
+        org.junit.Assert.assertNull(DrinkAssistant.parseReply("{\"pick\":", opts))
+    }
 }
