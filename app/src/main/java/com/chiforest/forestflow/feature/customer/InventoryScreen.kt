@@ -103,6 +103,8 @@ fun InventoryScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Acti
 
         AskCard(DrinkCatalog.options(Seed.products, node.ready), s.customer.osmanthusWatch, { dispatch(Action.Notify) }, { dispatch(Action.ProductDetails(it)) })
 
+        HowToBuy()
+
         Column {
             Eyebrow("Drinks in this machine") {
                 Pill("${Seed.products.size} Slots", c.ink, c.surface)
@@ -118,6 +120,7 @@ fun InventoryScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Acti
                         val eta = if (count <= 0) RestockEta.forNode(node.id, s.supplier)?.label else null
                         CoilCard(p, count, isWatching(s, p.key), Modifier.weight(1f), dispatch, eta, if (count <= 0) Nearby.nearest(map, node.id, p.key) else null)
                     }
+                    if (row.size == 1) Spacer(Modifier.weight(1f))
                 }
                 Spacer(Modifier.height(12.dp))
             }
@@ -329,5 +332,23 @@ fun DropAlertsBar(on: Boolean, onToggle: () -> Unit) {
             )
         }
         Text(if (on) "On" else "Turn on", style = Type.body(12.sp, 800), color = if (on) c.green else c.red)
+    }
+}
+
+/** User testing: students did not know how to buy, or where to find a drink this machine lacks. */
+@Composable
+private fun HowToBuy() {
+    val c = FF.c
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(c.surface).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text("How to buy", style = Type.title(15.sp, 800), color = c.ink)
+        listOf(
+            "1. Pick a drink below to see how many are left in this machine.",
+            "2. Tap Route to walk to the machine. The map shows which building it is in.",
+            "3. Pay at the machine itself; the app does not take payment. Tap Hold first to keep one for 5 minutes.",
+            "Sold out? The card shows the nearest machine that still has it.",
+        ).forEach { Text(it, style = Type.body(13.sp), color = c.muted) }
     }
 }

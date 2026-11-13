@@ -145,7 +145,7 @@ fun MapScreen(s: AppState, map: MapData, dispatch: (Action) -> Unit) {
                     Chip("Chilled <4°C", s.mapFilter == "chilled", { dispatch(Action.MapFilter("chilled")) }, icon = Ic.Snow)
                     Chip("High Stock", s.mapFilter == "high", { dispatch(Action.MapFilter("high")) }, icon = Ic.TrendUp)
                     Chip(
-                        s.buildingFilter?.let { "Bldg $it" } ?: "Bldg …", s.buildingFilter != null,
+                        s.buildingFilter?.let { "Building $it" } ?: "Building …", s.buildingFilter != null,
                         { dispatch(Action.OpenSheet(SheetKind.Buildings)) }, icon = Ic.Building, trailing = Ic.ChevronDown,
                     )
                 }
@@ -231,7 +231,7 @@ fun MapScreen(s: AppState, map: MapData, dispatch: (Action) -> Unit) {
                     }
                     results.buildings.forEach { (cp, b) ->
                         val nodeHere = cp.nodes.firstOrNull { it.building.equals(b.code, true) }
-                        ResultRow(Ic.Building, c.blue, "Bldg ${b.code} · ${b.nameZh}", "${b.name} · ${cp.name}${if (nodeHere == null) " · no node" else ""}") {
+                        ResultRow(Ic.Building, c.blue, "Building ${b.code} · ${b.nameZh}", "${b.name} · ${cp.name}${if (nodeHere == null) " · no node" else ""}") {
                             focus.clearFocus()
                             if (nodeHere != null) {
                                 dispatch(Action.Search(""))
@@ -368,7 +368,7 @@ fun BuildingsSheet(s: AppState, map: MapData, dispatch: (Action) -> Unit) {
         SheetRow("All buildings", "Show every station", s.buildingFilter == null) { dispatch(Action.BuildingFilter(null)) }
         withNodes.forEach { b ->
             val count = campus.nodes.count { it.building.equals(b.code, true) }
-            SheetRow("Bldg ${b.code} · ${b.nameZh}", "${b.name} · $count node${if (count > 1) "s" else ""}", s.buildingFilter == b.code) {
+            SheetRow("Building ${b.code} · ${b.nameZh}", "${b.name} · $count machine${if (count > 1) "s" else ""}", s.buildingFilter == b.code) {
                 dispatch(Action.BuildingFilter(b.code))
             }
         }

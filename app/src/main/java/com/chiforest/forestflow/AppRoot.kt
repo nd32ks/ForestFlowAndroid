@@ -232,7 +232,7 @@ private fun RoleShell(s: AppState, now: State<Long>, role: Role, vm: AppViewMode
 
         val subtitle = when {
             !student && tab == 3 -> "All machines · Taicang and SIP"
-            !student -> "Machine 01 · Bldg G · Taicang"
+            !student -> "Machine 01 · Building G · Taicang"
             tab == 1 -> map.campus(s.campusId).subtitle
             else -> {
                 val n = map.node(s.activeNodeId)
@@ -294,7 +294,7 @@ private fun ProfileSheet(s: AppState, vm: AppViewModel, dispatch: (Action) -> Un
         SheetTitle(session.displayName, if (session.role == Role.Student) "Student · Campus app" else "Supplier · Admin console") { dispatch(Action.CloseSheet) }
         InfoRow("Role", session.role.name)
         Hairline()
-        InfoRow("Machine", if (session.role == Role.Student) "${node?.shortName} · ${node?.label}" else "Machine 01 · Bldg G Atrium")
+        InfoRow("Machine", if (session.role == Role.Student) "${node?.shortName} · ${node?.label}" else "Machine 01 · Building G Atrium")
         Hairline()
         InfoRow("Signed in with", buildString {
             append(

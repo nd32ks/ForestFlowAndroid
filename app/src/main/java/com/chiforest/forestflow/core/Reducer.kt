@@ -118,7 +118,7 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
             val n = s.focusNonce + 1
             Next(
                 s.copy(campusId = campus?.id ?: s.campusId, mapFocus = MapFocus.Locate(n), focusNonce = n),
-                listOf(Effect.Toast("Located you near Bldg ${node?.building} · ${node?.shortName}", ToastIcon.Navigation), Effect.Haptic()),
+                listOf(Effect.Toast("Located you near Building ${node?.building} · ${node?.shortName}", ToastIcon.Navigation), Effect.Haptic()),
             )
         }
         Action.Compass -> {
@@ -433,7 +433,7 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
             }
             "I'm Here" -> Next(
                 s.copy(youAreHereNodeId = s.activeNodeId),
-                listOf(Effect.Toast("Checked in at ${node?.shortName} · Bldg ${node?.building}", ToastIcon.Pin), Effect.Haptic(), Effect.Log("checkIn", s.activeNodeId)),
+                listOf(Effect.Toast("Checked in at ${node?.shortName} · Building ${node?.building}", ToastIcon.Pin), Effect.Haptic(), Effect.Log("checkIn", s.activeNodeId)),
             )
             "Lock" -> when {
                 s.customer.escrow != null -> Next(s, listOf(Effect.Toast("You already have a can on hold", ToastIcon.Lock), Effect.Haptic()))

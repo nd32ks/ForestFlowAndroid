@@ -100,7 +100,7 @@ fun TelemetryScreen(s: AppState, map: com.chiforest.forestflow.core.MapData, clo
                 Icon(Ic.MapPin, null, tint = c.red, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(mine?.location ?: "Bldg G Ground Floor Atrium", style = Type.title(15.sp, 800), color = c.ink)
+                    Text(mine?.location ?: "Building G Ground Floor Atrium", style = Type.title(15.sp, 800), color = c.ink)
                     Text("${map.campusOfNode("N01")?.name ?: "Taicang"} campus · the machine you look after", style = Type.body(12.sp), color = c.muted)
                 }
             }
@@ -750,7 +750,7 @@ fun StockScreen(s: AppState, map: com.chiforest.forestflow.core.MapData, dispatc
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text("${n.shortName} · ${n.label}", style = Type.title(14.sp, 800), color = c.ink, maxLines = 1)
-                        Text("Bldg ${n.building} · ${n.location}", style = Type.body(11.sp), color = c.faint, maxLines = 1)
+                        Text("Building ${n.building} · ${n.location}", style = Type.body(11.sp), color = c.faint, maxLines = 1)
                     }
                     Pill(if (n.isLow) "low" else "online", if (n.isLow) c.amber else c.green, if (n.isLow) c.amberTint else c.greenTint)
                 }
