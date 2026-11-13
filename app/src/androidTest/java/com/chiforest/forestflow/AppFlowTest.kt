@@ -94,6 +94,13 @@ class AppFlowTest {
         rule.waitForIdle()
     }
 
+    /** Every sign-in opens the how-it-works guide; this closes it the way a user would. */
+    private fun skipGuide() {
+        see("Step 1 of", substring = true)
+        tap("Skip")
+        gone("Step 1 of", substring = true)
+    }
+
     private fun agreeAndLogin(supplier: Boolean) {
         see("元气森林 Chi Forest")
         if (supplier) tap("补货供货商 Supplier")
@@ -102,6 +109,7 @@ class AppFlowTest {
         see("Please accept the user agreement first")
         tap("我已阅读", substring = true)
         tap(if (supplier) "微信登录 · Supplier WeChat" else "微信一键登录 · WeChat Login")
+        skipGuide()
     }
 
     // ------------------------------------------------------------ tests
@@ -118,6 +126,7 @@ class AppFlowTest {
         see("482915")
         tap("登录并解锁冷柜 / Sign In")
         see("Welcome", substring = true)
+        skipGuide()
         see("TRAY COIL INVENTORY")
     }
 
@@ -128,6 +137,7 @@ class AppFlowTest {
         tap("Demo account · tap to fill")
         tap("Sign in")
         see("Welcome, Demo Student", substring = true)
+        skipGuide()
         see("TRAY COIL INVENTORY")
     }
 
@@ -323,6 +333,7 @@ class AppFlowTest {
         tap("我已阅读", substring = true)
         tap("访客 / 教职工")
         see("Welcome, Campus Visitor", substring = true)
+        skipGuide()
     }
 
     @Test fun supplier_secondary_actions() {
@@ -409,6 +420,7 @@ class AppFlowTest {
         tap("补货供货商 Supplier")
         tap("我已阅读", substring = true)
         tap("微信登录 · Supplier WeChat")
+        skipGuide()
         see("Coil Tray Matrix")
         nav("Dispatch")
         see("Node 01 Restock Routine")

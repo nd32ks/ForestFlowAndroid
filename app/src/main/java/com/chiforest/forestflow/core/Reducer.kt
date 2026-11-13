@@ -40,7 +40,7 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
                 base.copy(
                     session = a.session, ownerUid = a.session.uid, loginRole = role, agreed = true,
                     loggingIn = null, casBusy = false, casError = null,
-                    sheet = null, customerTab = 0, supplierTab = 0, phone = s.phone, smsCode = "", codeSentAt = 0,
+                    sheet = SheetKind.Guide, guideStep = 0, customerTab = 0, supplierTab = 0, phone = s.phone, smsCode = "", codeSentAt = 0,
                     shakeField = null, shakeNonce = s.shakeNonce, mapFocus = null, focusNonce = s.focusNonce,
                 ),
                 listOf(
@@ -261,6 +261,13 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
                 )
             }
         }
+        Action.Guide -> Next(s.copy(sheet = SheetKind.Guide, guideStep = 0), listOf(Effect.Haptic()))
+        is Action.GuideStep -> {
+            val last = (s.session?.role?.let { Guide.steps(it).size } ?: 1) - 1
+            Next(s.copy(guideStep = (s.guideStep + a.delta).coerceIn(0, last.coerceAtLeast(0))), listOf(Effect.Haptic()))
+        }
+        is Action.GuideGo -> tab(s.copy(sheet = null), a.tab)
+        is Action.FindDrink -> findDrink(s, a.key)
         is Action.Watch -> watch(s, a.key)
         Action.DropAlerts -> {
             val on = !s.customer.dropAlerts
@@ -341,6 +348,19 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
         s.copy(shakeField = field, shakeNonce = s.shakeNonce + 1),
         listOf(Effect.Toast(msg, ToastIcon.Alert), Effect.Haptic(strong = true)),
     )
+
+    private fun findDrink(s: AppState, key: String): Next {
+        val p = Seed.product(key) ?: return Next(s)
+        val here = map.node(s.activeNodeId)?.ready?.get(key) ?: 0
+        if (here > 0) return Next(s.copy(sheet = null, customerTab = 0), listOf(Effect.Toast("${p.name} is in stock right here · $here left", ToastIcon.Check), Effect.Haptic()))
+        val n = Nearby.nearest(map, s.activeNodeId, key)
+            ?: return Next(s.copy(sheet = null), listOf(Effect.Toast("${p.name} is sold out everywhere right now · tap Notify Me", ToastIcon.Bell)))
+        val base = s.copy(sheet = null)
+        return Next(
+            if (Features.campusMap) focusNode(base.copy(customerTab = 1), n.id) else base,
+            listOf(Effect.Toast("Nearest ${p.name}: ${n.shortName} · ${n.label} · ${n.walkMin} min walk (${n.ready[key]} left)", ToastIcon.Navigation), Effect.Haptic()),
+        )
+    }
 
     private fun watch(s: AppState, key: String): Next {
         val p = Seed.product(key) ?: return Next(s)

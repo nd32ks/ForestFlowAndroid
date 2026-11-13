@@ -184,7 +184,7 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
             }
         }
         if (nf != "restocks" && !showUrgent && !showTimeout && !showPerks) {
-            EmptyState(Ic.CheckCircle, "You're all caught up", "New drops and escrow updates will land here.")
+            EmptyState(Ic.CheckCircle, "You're all caught up", "Tap Notify Me on a sold-out drink, or turn on Get drop alerts, and the updates land here.")
         }
 
         // ---------------- preferences

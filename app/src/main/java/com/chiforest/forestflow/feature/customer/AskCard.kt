@@ -59,7 +59,7 @@ private val EXAMPLES = listOf("Something sweet", "No sugar", "Sour and refreshin
 
 /** "Ask for a drink": the student describes what they feel like and gets one in-stock pick with a short reason. */
 @Composable
-fun AskCard(options: List<DrinkOption>, watching: Boolean, onNotify: () -> Unit) {
+fun AskCard(options: List<DrinkOption>, watching: Boolean, onNotify: () -> Unit, onDetails: (String) -> Unit = {}) {
     val c = FF.c
     val assistant = LocalDrinkAssistant.current ?: return
     val scope = rememberCoroutineScope()
@@ -154,6 +154,10 @@ fun AskCard(options: List<DrinkOption>, watching: Boolean, onNotify: () -> Unit)
                             if (r.source == Recommendation.Source.Ai) c.blue else c.muted,
                             if (r.source == Recommendation.Source.Ai) c.blueTint else c.surface,
                         )
+                    }
+                    if (o != null) {
+                        Spacer(Modifier.height(8.dp))
+                        ForestButton("See details", { onDetails(o.key) }, small = true, style = BtnStyle.Tonal, icon = Ic.Search)
                     }
                     if (o == null && !watching) {
                         Spacer(Modifier.height(8.dp))

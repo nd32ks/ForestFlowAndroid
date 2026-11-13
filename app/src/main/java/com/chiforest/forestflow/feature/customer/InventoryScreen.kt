@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chiforest.forestflow.core.Action
 import com.chiforest.forestflow.core.Clearance
+import com.chiforest.forestflow.core.Nearby
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -87,20 +88,20 @@ fun InventoryScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Acti
             Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (Features.campusMap) {
-                    QuickAction(Ic.Route, "Route", Modifier.weight(1f)) { dispatch(Action.Quick("Route", System.currentTimeMillis())) }
-                    QuickAction(Ic.MapPin, "I'm Here", Modifier.weight(1f), active = s.youAreHereNodeId == node.id) { dispatch(Action.Quick("I'm Here", System.currentTimeMillis())) }
+                    QuickAction(Ic.Route, "Route", "Walk there", Modifier.weight(1f)) { dispatch(Action.Quick("Route", System.currentTimeMillis())) }
+                    QuickAction(Ic.MapPin, "I'm Here", "Check in", Modifier.weight(1f), active = s.youAreHereNodeId == node.id) { dispatch(Action.Quick("I'm Here", System.currentTimeMillis())) }
                 }
                 if (Features.vipClub) {
-                    QuickAction(Ic.Lock, "Lock", Modifier.weight(1f), active = s.customer.escrow != null) { dispatch(Action.Quick("Lock", System.currentTimeMillis())) }
+                    QuickAction(Ic.Lock, "Lock", "Hold a can", Modifier.weight(1f), active = s.customer.escrow != null) { dispatch(Action.Quick("Lock", System.currentTimeMillis())) }
                 }
-                QuickAction(Ic.Bell, "Alerts", Modifier.weight(1f)) { dispatch(Action.Tab(2)) }
-                QuickAction(Ic.Share, "Share", Modifier.weight(1f)) { dispatch(Action.Quick("Share", System.currentTimeMillis())) }
+                QuickAction(Ic.Bell, "Alerts", "Ping me", Modifier.weight(1f)) { dispatch(Action.Tab(2)) }
+                QuickAction(Ic.Share, "Share", "Send", Modifier.weight(1f)) { dispatch(Action.Quick("Share", System.currentTimeMillis())) }
             }
         }
 
         DropAlertsBar(s.customer.dropAlerts) { dispatch(Action.DropAlerts) }
 
-        AskCard(DrinkCatalog.options(Seed.products, node.ready), s.customer.osmanthusWatch) { dispatch(Action.Notify) }
+        AskCard(DrinkCatalog.options(Seed.products, node.ready), s.customer.osmanthusWatch, { dispatch(Action.Notify) }, { dispatch(Action.ProductDetails(it)) })
 
         Column {
             Eyebrow("Tray Coil Inventory") {
@@ -115,7 +116,7 @@ fun InventoryScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Acti
                     row.forEach { p ->
                         val count = node.ready[p.key] ?: 0
                         val eta = if (count <= 0) RestockEta.forNode(node.id, s.supplier)?.label else null
-                        CoilCard(p, count, isWatching(s, p.key), Modifier.weight(1f), dispatch, eta)
+                        CoilCard(p, count, isWatching(s, p.key), Modifier.weight(1f), dispatch, eta, if (count <= 0) Nearby.nearest(map, node.id, p.key) else null)
                     }
                 }
                 Spacer(Modifier.height(12.dp))
@@ -152,7 +153,7 @@ fun InventoryScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Acti
 }
 
 @Composable
-private fun QuickAction(icon: ImageVector, label: String, modifier: Modifier, active: Boolean = false, onClick: () -> Unit) {
+private fun QuickAction(icon: ImageVector, label: String, hint: String, modifier: Modifier, active: Boolean = false, onClick: () -> Unit) {
     val c = FF.c
     Column(
         modifier
@@ -166,11 +167,12 @@ private fun QuickAction(icon: ImageVector, label: String, modifier: Modifier, ac
         Icon(icon, null, tint = if (active) c.red else c.ink, modifier = Modifier.size(21.dp))
         Spacer(Modifier.height(6.dp))
         Text(label, style = Type.body(11.sp, 700), color = if (active) c.red else c.ink, maxLines = 1)
+        Text(hint, style = Type.body(9.sp, 500), color = c.faint, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 2.dp))
     }
 }
 
 @Composable
-private fun CoilCard(p: Product, count: Int, watching: Boolean, modifier: Modifier, dispatch: (Action) -> Unit, eta: String? = null) {
+private fun CoilCard(p: Product, count: Int, watching: Boolean, modifier: Modifier, dispatch: (Action) -> Unit, eta: String? = null, nearest: com.chiforest.forestflow.core.MapNode? = null) {
     val c = FF.c
     val out = count <= 0
     Column(modifier.softCard(RoundedCornerShape(22.dp)).pressable(scaleTo = 0.97f, label = "${p.name} details") { dispatch(Action.ProductDetails(p.key)) }) {
@@ -199,6 +201,13 @@ private fun CoilCard(p: Product, count: Int, watching: Boolean, modifier: Modifi
             if (eta != null) {
                 Spacer(Modifier.height(6.dp))
                 Text(eta, style = Type.body(10.sp, 600), color = c.amber)
+            }
+            if (out) {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    if (nearest != null) "Sold out here · nearest: ${nearest.shortName}, ${nearest.walkMin} min walk" else "Sold out at every machine · tap Notify Me",
+                    style = Type.body(10.sp, 600), color = c.muted,
+                )
             }
             Spacer(Modifier.height(10.dp))
             if (out) {
@@ -271,6 +280,11 @@ fun ProductSheet(s: AppState, map: MapData, dispatch: (Action) -> Unit) {
                 }
             }
             Spacer(Modifier.height(14.dp))
+            ForestButton(
+                if (here > 0) "Where is it? Right here at ${node.shortName}" else "Take me to the nearest one",
+                { dispatch(Action.FindDrink(p.key)) }, Modifier.fillMaxWidth(), style = BtnStyle.Outline, icon = Ic.Navigation,
+            )
+            Spacer(Modifier.height(10.dp))
             val following = isWatching(s, p.key)
             ForestButton(
                 if (following) "Following · tap to stop alerts" else "Notify me when it's restocked", { dispatch(Action.Watch(p.key)) },

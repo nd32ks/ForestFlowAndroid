@@ -222,6 +222,7 @@ fun GlassHeader(
     onAvatar: () -> Unit,
     modifier: Modifier = Modifier,
     temp: String? = null,
+    onHelp: (() -> Unit)? = null,
 ) {
     val c = FF.c
     Box(
@@ -258,6 +259,16 @@ fun GlassHeader(
             if (temp != null) {
                 Pill(temp, c.blue, c.blueTint, icon = Ic.Sun)
                 Spacer(Modifier.width(4.dp))
+            }
+            if (onHelp != null) {
+                Box(
+                    Modifier.size(44.dp).semantics { contentDescription = "How it works" }.pressable(scaleTo = 0.9f, onClick = onHelp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(Modifier.size(30.dp).clip(CircleShape).background(c.surface2), contentAlignment = Alignment.Center) {
+                        Text("?", style = Type.title(15.sp, 800), color = c.ink)
+                    }
+                }
             }
             Box(
                 Modifier.size(48.dp).semantics { contentDescription = "Profile" }.pressable(scaleTo = 0.9f, onClick = onAvatar),

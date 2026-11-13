@@ -40,6 +40,13 @@ sealed interface Action {
     data class Watch(val key: String) : Action
     /** One tap: alerts for every new product drop. */
     data object DropAlerts : Action
+    /** Open the how-it-works guide (also opened automatically after every sign-in). */
+    data object Guide : Action
+    data class GuideStep(val delta: Int) : Action
+    /** "Take me there": close the guide and open this tab. */
+    data class GuideGo(val tab: Int) : Action
+    /** Take the student to the nearest machine that has this drink. */
+    data class FindDrink(val key: String) : Action
 
     // Map
     data class Pin(val nodeId: String) : Action

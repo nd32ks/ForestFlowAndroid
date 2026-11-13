@@ -183,6 +183,7 @@ fun AppRoot(vm: AppViewModel) {
         SheetKind.Layers -> LayersSheet(s, vm.mapData, dispatch)
         SheetKind.Stations -> StationsSheet(s, vm.mapData, dispatch)
         SheetKind.Product -> com.chiforest.forestflow.feature.customer.ProductSheet(s, vm.mapData, dispatch)
+        SheetKind.Guide -> com.chiforest.forestflow.feature.GuideSheet(s, dispatch)
         SheetKind.Redeem -> RedeemSheet(s, dispatch)
         SheetKind.Qr -> QrSheet(s, vm.mapData, dispatch)
         SheetKind.Cas -> CasSheet(s, vm.authBackend, vm::casSubmit, dispatch)
@@ -242,6 +243,7 @@ private fun RoleShell(s: AppState, now: State<Long>, role: Role, vm: AppViewMode
             haze, admin = !student, subtitle = subtitle,
             initials = initials(s.session?.displayName ?: "?"),
             onAvatar = { dispatch(Action.Profile) },
+            onHelp = { dispatch(Action.Guide) },
             temp = if (student) "28°" else null,
         )
 

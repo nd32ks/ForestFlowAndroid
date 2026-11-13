@@ -216,7 +216,10 @@ fun MapScreen(s: AppState, map: MapData, dispatch: (Action) -> Unit) {
                         .verticalScroll(rememberScrollState()).padding(vertical = 6.dp),
                 ) {
                     if (results.nodes.isEmpty() && results.buildings.isEmpty()) {
-                        Text("No results for “${s.search}”", style = Type.body(14.sp), color = c.faint, modifier = Modifier.padding(16.dp))
+                        Column(Modifier.padding(16.dp)) {
+                            Text("No results for “${s.search}”", style = Type.body(14.sp), color = c.faint)
+                            Text("Try a building letter like G, a node number like 02, or a place like “Library”.", style = Type.body(12.sp), color = c.faint)
+                        }
                     }
                     results.nodes.forEach { n ->
                         val cp = map.campusOfNode(n.id)

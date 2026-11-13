@@ -134,7 +134,7 @@ data class SupplierState(
     fun coil(id: String) = coils.firstOrNull { it.id == id }
 }
 
-enum class SheetKind { Profile, Buildings, Layers, Redeem, Cas, Qr, Stations, Product }
+enum class SheetKind { Profile, Buildings, Layers, Redeem, Cas, Qr, Stations, Product, Guide }
 
 @Immutable
 sealed interface MapFocus {
@@ -184,6 +184,8 @@ data class AppState(
     @Transient val pulseBuilding: String? = null,
     /** Product whose details sheet is open (key from Seed.products). */
     @Transient val productKey: String? = null,
+    /** Page of the sign-in guide that is showing. */
+    @Transient val guideStep: Int = 0,
 ) {
     /** Unread = feed cards that are neither read nor dismissed. */
     val unread: Int get() = unread(vip = true)

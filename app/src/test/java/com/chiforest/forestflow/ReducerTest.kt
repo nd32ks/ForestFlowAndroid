@@ -413,4 +413,63 @@ class ReducerTest {
         assertEquals("stockout", s.supplier.alertFilter)
         assertTrue(s.supplier.muted)
     }
+
+    // ---------------- guide, find drink
+    @Test fun every_sign_in_opens_the_guide_at_step_one() {
+        val s = fresh(null).go(Action.LoginSucceeded(student, null, t0))
+        assertEquals(SheetKind.Guide, s.sheet)
+        assertEquals(0, s.guideStep)
+        val again = s.go(Action.CloseSheet, Action.Logout, Action.LoginSucceeded(student, null, t0))
+        assertEquals(SheetKind.Guide, again.sheet)
+        assertEquals(SheetKind.Guide, fresh(null).go(Action.LoginSucceeded(supplier, null, t0)).sheet)
+    }
+
+    @Test fun guide_steps_move_and_stay_in_range() {
+        val n = com.chiforest.forestflow.core.Guide.steps(Role.Student).size
+        var s = fresh().go(Action.Guide)
+        assertEquals(SheetKind.Guide, s.sheet)
+        s = s.go(Action.GuideStep(-1)); assertEquals(0, s.guideStep)
+        repeat(n + 3) { s = s.go(Action.GuideStep(1)) }
+        assertEquals(n - 1, s.guideStep)
+        assertNull(s.go(Action.CloseSheet).sheet)
+    }
+
+    @Test fun guide_take_me_there_opens_the_tab_and_closes() {
+        val s = fresh().go(Action.Guide, Action.GuideGo(2))
+        assertNull(s.sheet)
+        assertEquals(2, s.customerTab)
+        val sup = fresh(supplier).go(Action.Guide, Action.GuideGo(1))
+        assertEquals(1, sup.supplierTab)
+    }
+
+    @Test fun guide_leaves_out_steps_for_features_that_are_off() {
+        val all = com.chiforest.forestflow.core.Guide.steps(Role.Student, map = true, vip = true)
+        val bare = com.chiforest.forestflow.core.Guide.steps(Role.Student, map = false, vip = false)
+        assertEquals(all.size, bare.size)
+        assertTrue(bare.none { "VIP" in it.where || "QR" in it.body || "Campus Map" in it.body })
+        assertTrue(all.any { "QR" in it.body })
+        assertTrue(com.chiforest.forestflow.core.Guide.steps(Role.Supplier).size >= 4)
+        assertTrue(all.all { "payment" !in it.body || "doesn’t take payment" in it.body })
+    }
+
+    @Test fun find_drink_goes_to_the_nearest_machine_that_has_it() {
+        val s = fresh()
+        val node = map.node(s.activeNodeId)!!
+        val key = Seed.products.first { (node.ready[it.key] ?: 0) == 0 && com.chiforest.forestflow.core.Nearby.nearest(map, node.id, it.key) != null }.key
+        val nearest = com.chiforest.forestflow.core.Nearby.nearest(map, node.id, key)!!
+        assertTrue((nearest.ready[key] ?: 0) > 0)
+        assertTrue(map.allNodes.filter { it.id != node.id && (it.ready[key] ?: 0) > 0 }.all { nearest.walkMin <= it.walkMin })
+        val next = s.go(Action.ProductDetails(key), Action.FindDrink(key))
+        assertNull(next.sheet)
+        assertEquals(nearest.id, next.selectedNodeId)
+    }
+
+    @Test fun find_drink_in_stock_here_stays_put() {
+        val s = fresh()
+        val node = map.node(s.activeNodeId)!!
+        val key = Seed.products.first { (node.ready[it.key] ?: 0) > 0 }.key
+        val e = effects(s, Action.FindDrink(key))
+        assertTrue(e.filterIsInstance<Effect.Toast>().any { "right here" in it.text })
+        assertEquals(s.selectedNodeId, s.go(Action.FindDrink(key)).selectedNodeId)
+    }
 }
