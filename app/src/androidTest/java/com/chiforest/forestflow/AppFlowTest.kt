@@ -163,7 +163,7 @@ class AppFlowTest {
         nav("Campus Map")
         see("Search machines or buildings…")
         rule.onAllNodes(hasContentDescription("Search nodes or buildings")).onFirst().performTextInput("library")
-        see("Library 1F Hub", substring = true)
+        see("Library Hub · 1F", substring = true)
         tap("Machine 03")
         see("Chi Forest Machine 03")
         tap("Directions")
@@ -295,7 +295,7 @@ class AppFlowTest {
         rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Search nodes or buildings")).onFirst().performTextInput("node")
         tap("All stations list")
         see("All machines")
-        tap("Machine 09 · FB Atrium")
+        tap("Machine 09 · FB Atrium · 1F")
         see("Chi Forest Machine 09")
 
         // Notifications: switches, preferences, unsubscribe → empty state, hold & re-order

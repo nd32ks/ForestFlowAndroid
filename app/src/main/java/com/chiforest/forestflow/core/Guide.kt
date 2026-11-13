@@ -18,8 +18,8 @@ object Guide {
         add(
             GuideStep(
                 "Inventory tab · top card", "1. Find a machine",
-                if (map) "The top card shows the machine nearest to you, its building and the walk time. Tap Route for walking directions, or open Campus Map to see every machine on both campuses. Machine names say where it is, like “AI Lab 2F”."
-                else "The top card shows the machine nearest to you, its building and the walk time. Machine names say where it is, like “AI Lab 2F”.",
+                if (map) "The top card shows the machine nearest to you, its building, floor and the walk time. Tap Route for walking directions, or open Campus Map to see every machine on both campuses. Machine names say where it is, like “AI Lab 2F”."
+                else "The top card shows the machine nearest to you, its building, floor and the walk time. Machine names say where it is, like “AI Lab 2F”.",
                 if (map) 1 else 0,
             ),
         )

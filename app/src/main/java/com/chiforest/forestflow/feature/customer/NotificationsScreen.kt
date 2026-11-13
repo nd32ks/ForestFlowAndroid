@@ -95,7 +95,7 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
                 }
                 AnimatedVisibility(cu.osmanthusWatch, enter = expandVertically() + fadeIn(), exit = exit) {
                     WatchCard(
-                        "osmanthus", "Osmanthus Plum Sparkling", "Machine 01 · Building G Atrium",
+                        "osmanthus", "Osmanthus Plum Sparkling", "Machine 01 · Building G Atrium · 1F",
                         RestockEta.forNode("N01", s.supplier)?.label ?: "Slot 4 is being restocked today at 14:30", c.amber, c.amberTint,
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -106,7 +106,7 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
                 }
                 AnimatedVisibility(cu.peachWatch, enter = expandVertically() + fadeIn(), exit = exit) {
                     WatchCard(
-                        "white peach", "White Peach back in stock", "Machine 03 · Library 1F Hub",
+                        "white peach", "White Peach back in stock", "Machine 03 · Library Hub · 1F",
                         "Slot 2 · 0 sugar · chilled", c.blue, c.blueTint,
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -140,7 +140,7 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
             ) {
                 Text(
                     buildAnnotatedString {
-                        append("Machine 02 (AI Lab 2F) was just refilled. ")
+                        append("Machine 02 (AI Lab, 2F) was just refilled. ")
                         withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = c.red)) { append("9 cans remaining") }
                         append(" left.")
                     },

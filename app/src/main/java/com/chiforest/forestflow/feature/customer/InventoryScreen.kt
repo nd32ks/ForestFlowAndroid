@@ -346,7 +346,7 @@ private fun HowToBuy() {
         Text("How to buy", style = Type.title(15.sp, 800), color = c.ink)
         listOf(
             "1. Pick a drink below to see how many are left in this machine.",
-            "2. Tap Route to walk to the machine. The map shows which building it is in.",
+            "2. Tap Route to walk to the machine. The map shows the building and floor.",
             "3. Pay at the machine itself; the app does not take payment. Tap Hold first to keep one for 5 minutes.",
             "Sold out? The card shows the nearest machine that still has it.",
         ).forEach { Text(it, style = Type.body(13.sp), color = c.muted) }
