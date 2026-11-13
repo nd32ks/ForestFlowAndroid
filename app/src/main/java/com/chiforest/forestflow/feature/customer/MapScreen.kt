@@ -115,7 +115,7 @@ fun MapScreen(s: AppState, map: MapData, dispatch: (Action) -> Unit) {
                             modifier = Modifier.weight(1f).semantics { contentDescription = "Search nodes or buildings" },
                             decorationBox = { inner ->
                                 Box(contentAlignment = Alignment.CenterStart) {
-                                    if (s.search.isEmpty()) Text("Search nodes or buildings…", style = Type.body(15.sp), color = c.faint, maxLines = 1)
+                                    if (s.search.isEmpty()) Text("Search machines or buildings…", style = Type.body(15.sp), color = c.faint, maxLines = 1)
                                     inner()
                                 }
                             },
@@ -141,7 +141,7 @@ fun MapScreen(s: AppState, map: MapData, dispatch: (Action) -> Unit) {
 
                 // 4. filter chips
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Chip("All Stations (${campus.nodes.size})", s.mapFilter == "all", { dispatch(Action.MapFilter("all")) }, icon = Ic.Vending)
+                    Chip("All machines (${campus.nodes.size})", s.mapFilter == "all", { dispatch(Action.MapFilter("all")) }, icon = Ic.Vending)
                     Chip("Chilled <4°C", s.mapFilter == "chilled", { dispatch(Action.MapFilter("chilled")) }, icon = Ic.Snow)
                     Chip("High Stock", s.mapFilter == "high", { dispatch(Action.MapFilter("high")) }, icon = Ic.TrendUp)
                     Chip(
@@ -185,7 +185,7 @@ fun MapScreen(s: AppState, map: MapData, dispatch: (Action) -> Unit) {
                     ) {
                         LiveDot(Color(0xFF3DDC97), size = 6.dp)
                         Spacer(Modifier.width(6.dp))
-                        Text("${campus.name} Mesh Active", style = Type.body(10.sp, 700), color = Color.White)
+                        Text("${campus.name} · live stock", style = Type.body(10.sp, 700), color = Color.White)
                     }
                     androidx.compose.animation.AnimatedVisibility(
                         visible.isEmpty(), Modifier.align(Alignment.BottomCenter).padding(bottom = 44.dp),
@@ -218,7 +218,7 @@ fun MapScreen(s: AppState, map: MapData, dispatch: (Action) -> Unit) {
                     if (results.nodes.isEmpty() && results.buildings.isEmpty()) {
                         Column(Modifier.padding(16.dp)) {
                             Text("No results for “${s.search}”", style = Type.body(14.sp), color = c.faint)
-                            Text("Try a building letter like G, a node number like 02, or a place like “Library”.", style = Type.body(12.sp), color = c.faint)
+                            Text("Try a building letter like G, a machine number like 02, or a place like “Library”.", style = Type.body(12.sp), color = c.faint)
                         }
                     }
                     results.nodes.forEach { n ->
@@ -240,7 +240,7 @@ fun MapScreen(s: AppState, map: MapData, dispatch: (Action) -> Unit) {
                         }
                     }
                     Hairline(Modifier.padding(vertical = 4.dp))
-                    ResultRow(Ic.Activity, c.muted, "All stations list", "Accessible list of every vending node") {
+                    ResultRow(Ic.Activity, c.muted, "All stations list", "A plain list of every machine") {
                         focus.clearFocus()
                         dispatch(Action.OpenSheet(SheetKind.Stations))
                     }
@@ -316,7 +316,7 @@ private fun NodeCard(n: MapNode, s: AppState, map: MapData, dispatch: (Action) -
         Text("${n.location} · ${n.distanceM}m away · Est. walk ${n.walkMin} min", style = Type.body(13.sp), color = c.faint)
         Spacer(Modifier.height(14.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            MetricTile("Chiller Core", "${n.tempC}°C", if (n.tempC < 4f) "Ideal" else "Warm", if (n.tempC < 4f) c.blue else c.amber, Ic.Thermo, Modifier.weight(1f))
+            MetricTile("Inside temp", "${n.tempC}°C", if (n.tempC < 4f) "Ideal" else "Warm", if (n.tempC < 4f) c.blue else c.amber, Ic.Thermo, Modifier.weight(1f))
             MetricTile("Total Stock", "${n.pct}%", if (n.pct >= 75) "High" else if (n.pct >= 40) "Steady" else "Low", if (n.pct >= 40) c.green else c.amber, Ic.Box, Modifier.weight(1f))
         }
         Spacer(Modifier.height(14.dp))
@@ -397,7 +397,7 @@ fun LayersSheet(s: AppState, map: MapData, dispatch: (Action) -> Unit) {
     val campus = map.campus(s.campusId)
     ForestSheet(onDismiss = { dispatch(Action.CloseSheet) }) {
         SheetTitle("Map Layers", "${campus.name} ${campus.nameZh}") { dispatch(Action.CloseSheet) }
-        ToggleRow("Vending nodes", "Chi Forest smart chillers", s.layers.nodes, { dispatch(Action.LayerToggle("nodes")) }, Ic.Vending)
+        ToggleRow("Vending machines", "Chi Forest smart chillers", s.layers.nodes, { dispatch(Action.LayerToggle("nodes")) }, Ic.Vending)
         Hairline(Modifier.padding(start = 46.dp))
         ToggleRow(
             "Entrances", if (campus.entrances.isEmpty()) "Taicang campus only" else "Gates with English + 中文 labels",
@@ -416,7 +416,7 @@ fun LayersSheet(s: AppState, map: MapData, dispatch: (Action) -> Unit) {
 @Composable
 fun StationsSheet(s: AppState, map: MapData, dispatch: (Action) -> Unit) {
     ForestSheet(onDismiss = { dispatch(Action.CloseSheet) }) {
-        SheetTitle("All Stations", "Every vending node on both campuses") { dispatch(Action.CloseSheet) }
+        SheetTitle("All machines", "Every machine on both campuses") { dispatch(Action.CloseSheet) }
         Column(Modifier.fillMaxWidth().heightIn(max = 520.dp).verticalScroll(rememberScrollState())) {
             map.campuses.forEach { cp ->
                 Text("${cp.name} ${cp.nameZh}".uppercase(), style = Type.eyebrow(10.sp), color = FF.c.faint, modifier = Modifier.padding(top = 10.dp, bottom = 4.dp))

@@ -75,7 +75,7 @@ fun InventoryScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Acti
         // Station card
         ForestCard(Modifier.fillMaxWidth(), radius = 26.dp, padding = androidx.compose.foundation.layout.PaddingValues(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("STATION · ${node.shortName.uppercase()} · BLDG ${node.building}", style = Type.eyebrow(10.sp), color = c.red, modifier = Modifier.weight(1f))
+                Text("Nearest machine · ${node.shortName} · Building ${node.building}", style = Type.body(12.sp, 700), color = c.red, modifier = Modifier.weight(1f))
                 Pill("${node.walkMin} min walk", c.amber, c.amberTint, icon = Ic.Bolt)
             }
             Spacer(Modifier.height(6.dp))
@@ -92,7 +92,7 @@ fun InventoryScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Acti
                     QuickAction(Ic.MapPin, "I'm Here", "Check in", Modifier.weight(1f), active = s.youAreHereNodeId == node.id) { dispatch(Action.Quick("I'm Here", System.currentTimeMillis())) }
                 }
                 if (Features.vipClub) {
-                    QuickAction(Ic.Lock, "Lock", "Hold a can", Modifier.weight(1f), active = s.customer.escrow != null) { dispatch(Action.Quick("Lock", System.currentTimeMillis())) }
+                    QuickAction(Ic.Lock, "Hold", "5 min", Modifier.weight(1f), active = s.customer.escrow != null) { dispatch(Action.Quick("Lock", System.currentTimeMillis())) }
                 }
                 QuickAction(Ic.Bell, "Alerts", "Ping me", Modifier.weight(1f)) { dispatch(Action.Tab(2)) }
                 QuickAction(Ic.Share, "Share", "Send", Modifier.weight(1f)) { dispatch(Action.Quick("Share", System.currentTimeMillis())) }
@@ -104,10 +104,10 @@ fun InventoryScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Acti
         AskCard(DrinkCatalog.options(Seed.products, node.ready), s.customer.osmanthusWatch, { dispatch(Action.Notify) }, { dispatch(Action.ProductDetails(it)) })
 
         Column {
-            Eyebrow("Tray Coil Inventory") {
+            Eyebrow("Drinks in this machine") {
                 Pill("${Seed.products.size} Slots", c.ink, c.surface)
                 Spacer(Modifier.width(6.dp))
-                Pill("${node.tempC}°C ${if (node.tempC < 4f) "Hyper-Cool" else "Chilled"}", if (node.tempC < 4f) c.blue else c.amber, if (node.tempC < 4f) c.blueTint else c.amberTint, icon = Ic.Snow)
+                Pill("${node.tempC}°C ${if (node.tempC < 4f) "Ice cold" else "Chilled"}", if (node.tempC < 4f) c.blue else c.amber, if (node.tempC < 4f) c.blueTint else c.amberTint, icon = Ic.Snow)
             }
             Spacer(Modifier.height(10.dp))
             val products = Seed.products
@@ -141,8 +141,8 @@ fun InventoryScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Acti
                     }
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("1 Lock in Escrow", style = Type.title(15.sp, 800), color = Color.White)
-                        Text("${map.node(e.nodeId)?.shortName} Coil #${e.coil} · ${e.product}", style = Type.body(12.sp), color = Color.White.copy(alpha = 0.7f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("1 can on hold for you", style = Type.title(15.sp, 800), color = Color.White)
+                        Text("${e.product} · ${map.node(e.nodeId)?.shortName}, slot ${e.coil}", style = Type.body(12.sp), color = Color.White.copy(alpha = 0.7f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                         HoldLeft(e, now)
                     }
                     ForestButton("Release", { dispatch(Action.Release) }, small = true, style = BtnStyle.Primary)
@@ -179,7 +179,7 @@ private fun CoilCard(p: Product, count: Int, watching: Boolean, modifier: Modifi
         Box(Modifier.fillMaxWidth().aspectRatio(1.25f).clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))) {
             ProductArt(p.key, Modifier.matchParentSize(), outOfStock = out)
             Text(
-                "COIL #0${p.coil}", style = Type.eyebrow(9.sp), color = c.ink,
+                "Slot ${p.coil}", style = Type.eyebrow(9.sp), color = c.ink,
                 modifier = Modifier.padding(10.dp).clip(CircleShape).background(c.surface.copy(alpha = 0.85f)).padding(horizontal = 8.dp, vertical = 3.dp),
             )
             Box(Modifier.align(Alignment.TopEnd).padding(10.dp)) {

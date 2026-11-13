@@ -60,6 +60,7 @@ class MapTest {
         assertTrue(MapSearch.search(map, "CB").nodes.any { it.id == "N07" })
         assertTrue(MapSearch.search(map, "Design").buildings.any { it.second.code == "DB" })
         assertTrue(MapSearch.search(map, "node 05").nodes.any { it.id == "N05" })
+        assertTrue(MapSearch.search(map, "machine 05").nodes.any { it.id == "N05" })
         assertTrue(MapSearch.search(map, "").nodes.isEmpty())
     }
 }

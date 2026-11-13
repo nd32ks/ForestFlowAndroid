@@ -118,7 +118,7 @@ fun LoginScreen(s: AppState, now: State<Long>, dispatch: (Action) -> Unit) {
                 Column {
                     Text("元气森林 Chi Forest", style = Type.display(26.sp, 800), color = c.ink)
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("XJTLU Campus Node 01", style = Type.body(13.sp, 500), color = c.faint)
+                        Text("XJTLU campus vending machines", style = Type.body(13.sp, 500), color = c.faint)
                         Spacer(Modifier.width(8.dp))
                         Pill("智选冷柜", c.red, c.redTint)
                     }
@@ -212,7 +212,7 @@ fun LoginScreen(s: AppState, now: State<Long>, dispatch: (Action) -> Unit) {
                     Text("太仓校区教学主楼 G层 02号智能柜", style = Type.body(13.sp, 600), color = c.ink, maxLines = 1)
                     Text("· 离您 12 米", style = Type.body(12.sp), color = c.faint)
                 }
-                Pill("正常运行", c.green, c.greenTint, dot = true, pulse = true)
+                Pill("正常运行", c.green, c.greenTint, dot = true)
             }
             Spacer(Modifier.height(16.dp))
 

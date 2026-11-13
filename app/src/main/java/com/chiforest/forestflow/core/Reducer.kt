@@ -78,13 +78,13 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
             val node = map.node(s.activeNodeId)
             Next(
                 focusNode(s.copy(customerTab = 1), s.activeNodeId),
-                listOf(Effect.Toast("Coil #0${a.coil} · ${node?.shortName ?: ""} highlighted on map", ToastIcon.Navigation), Effect.Haptic()),
+                listOf(Effect.Toast("Slot ${a.coil} at ${node?.shortName ?: ""} shown on the map", ToastIcon.Navigation), Effect.Haptic()),
             )
         }
         Action.Notify -> watch(s, "Osmanthus")
         Action.Release -> if (s.customer.escrow == null) Next(s) else Next(
             s.copy(customer = s.customer.copy(escrow = null)),
-            listOf(Effect.Toast("Coil released back to the shelf", ToastIcon.Lock), Effect.Haptic(strong = true), Effect.Log("release", s.customer.escrow.product)),
+            listOf(Effect.Toast("Hold cancelled · the can is back on sale", ToastIcon.Lock), Effect.Haptic(strong = true), Effect.Log("release", s.customer.escrow.product)),
         )
 
         // ---------------- Map ----------------
@@ -109,7 +109,7 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
                     mapFocus = MapFocus.Building(a.campusId, a.code, n), focusNonce = n,
                     selectedNodeId = if (map.campusOfNode(s.selectedNodeId)?.id == a.campusId) s.selectedNodeId else map.campus(a.campusId).nodes.first().id,
                 ),
-                listOf(Effect.Toast("Bldg ${a.code} · no vending node here yet", ToastIcon.Pin)),
+                listOf(Effect.Toast("Building ${a.code} has no vending machine yet", ToastIcon.Pin)),
             )
         }
         Action.Locate -> {
@@ -162,7 +162,7 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
             s.copy(customer = s.customer.copy(read = Seed.notificationIds)),
             listOf(Effect.Toast("All caught up", ToastIcon.Check), Effect.Haptic()),
         )
-        Action.LiveStatus -> Next(s, listOf(Effect.Toast("Node 01 · Coil #04 restocking today 14:30 · runner Zhang en route", ToastIcon.Bolt)))
+        Action.LiveStatus -> Next(s, listOf(Effect.Toast("Machine 01, slot 4 is being restocked at 14:30 · runner Zhang is on the way", ToastIcon.Bolt)))
         is Action.Unsub -> {
             val c = s.customer
             val next = if (a.which == "osmanthus") c.copy(osmanthusWatch = false, watch = c.watch - "Osmanthus") else c.copy(peachWatch = false)
@@ -183,7 +183,7 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
             Next(
                 focusNode(next, "N02").let { it.copy(directionsTo = if (map.campusOfNode(it.youAreHereNodeId)?.id == "tc") "N02" else null) },
                 listOf(
-                    Effect.Toast(if (c.escrow == null) "Holding White Peach at Node 02 · 10 min" else "Routing to Node 02", ToastIcon.Lock),
+                    Effect.Toast(if (c.escrow == null) "Holding White Peach at Machine 02 · 10 min" else "Directions to Machine 02", ToastIcon.Lock),
                     Effect.Haptic(strong = true),
                     Effect.Log("holdNav", "N02 coil 1"),
                 ),
@@ -196,14 +196,14 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
         is Action.Reorder -> {
             val c = s.customer
             if (c.escrow != null) {
-                Next(s.copy(customerTab = 3), listOf(Effect.Toast("You already hold a coil", ToastIcon.Lock)))
+                Next(s.copy(customerTab = 3), listOf(Effect.Toast("You already have a can on hold", ToastIcon.Lock)))
             } else {
                 Next(
                     s.copy(
                         customer = c.copy(escrow = Escrow(s.activeNodeId, 3, "Calamansi Lime", a.now, a.now + Escrow.CLAIM_MS), read = (c.read + "timeout").distinct()),
                         customerTab = 3,
                     ),
-                    listOf(Effect.Toast("Re-ordered · Coil #03 locked for you", ToastIcon.Lock), Effect.Haptic(strong = true), Effect.Log("reorder", "coil 3")),
+                    listOf(Effect.Toast("Held again · slot 3 is yours for 5 min", ToastIcon.Lock), Effect.Haptic(strong = true), Effect.Log("reorder", "coil 3")),
                 )
             }
         }
@@ -296,14 +296,14 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
                     ),
                     aBadge = s.aBadge + 1,
                 ),
-                listOf(Effect.Toast("Surge simulated · +64 dispensed, +13 queued", ToastIcon.Bolt), Effect.Haptic(strong = true), Effect.Log("surge", "+64 / +13")),
+                listOf(Effect.Toast("Rush simulated · 64 more cans sold, 13 more students waiting", ToastIcon.Bolt), Effect.Haptic(strong = true), Effect.Log("surge", "+64 / +13")),
             )
         }
         is Action.ConfirmRestock -> {
             val sp = s.supplier
             if (sp.restockConfirmed) Next(s) else {
                 val ev = event(sp, FeedType.Restock, "Restock Confirmed", "Zhang — stock 100%", a.clock,
-                    "All 16 coils loaded to capacity. Queue cleared and waiting students notified.", listOf("Verified by NFC Token"))
+                    "All 16 slots are full. Waiting students were told, first come first served.", listOf("Checked by machine sensors"))
                 Next(
                     s.copy(
                         supplier = sp.copy(
@@ -311,7 +311,7 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
                             restockConfirmed = true, feed = listOf(ev) + sp.feed, eventSeq = sp.eventSeq + 1,
                         ),
                     ),
-                    listOf(Effect.Toast("Node 01 restocked to 100%", ToastIcon.Check), Effect.Haptic(strong = true), Effect.Log("confirmRestock", "16 coils → 15")),
+                    listOf(Effect.Toast("Machine 01 is full again", ToastIcon.Check), Effect.Haptic(strong = true), Effect.Log("confirmRestock", "16 coils → 15")),
                 )
             }
         }
@@ -322,7 +322,7 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
         is Action.AlertFilter -> Next(s.copy(supplier = s.supplier.copy(alertFilter = a.filter)), listOf(Effect.Haptic()))
         Action.Mute -> {
             val m = !s.supplier.muted
-            Next(s.copy(supplier = s.supplier.copy(muted = m)), listOf(Effect.Toast(if (m) "Alert gateway muted" else "Alert gateway live", ToastIcon.Bell), Effect.Haptic()))
+            Next(s.copy(supplier = s.supplier.copy(muted = m)), listOf(Effect.Toast(if (m) "Alerts muted" else "Alerts on", ToastIcon.Bell), Effect.Haptic()))
         }
     }
 
@@ -416,7 +416,7 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
         val e = s.customer.escrow ?: return Next(s)
         return if (now >= e.expiresAt) Next(
             s.copy(customer = s.customer.copy(escrow = null)),
-            listOf(Effect.Toast("Escrow expired, coil released", ToastIcon.Lock), Effect.Haptic(strong = true), Effect.Log("escrowExpired", e.product)),
+            listOf(Effect.Toast("Your hold ran out · the can is back on sale", ToastIcon.Lock), Effect.Haptic(strong = true), Effect.Log("escrowExpired", e.product)),
         ) else Next(s)
     }
 
@@ -436,11 +436,11 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
                 listOf(Effect.Toast("Checked in at ${node?.shortName} · Bldg ${node?.building}", ToastIcon.Pin), Effect.Haptic(), Effect.Log("checkIn", s.activeNodeId)),
             )
             "Lock" -> when {
-                s.customer.escrow != null -> Next(s, listOf(Effect.Toast("You already hold a coil in escrow", ToastIcon.Lock), Effect.Haptic()))
-                (node?.ready?.get("Calamansi") ?: 0) <= 0 -> Next(s, listOf(Effect.Toast("Coil #03 is empty at ${node?.shortName}", ToastIcon.Alert)))
+                s.customer.escrow != null -> Next(s, listOf(Effect.Toast("You already have a can on hold", ToastIcon.Lock), Effect.Haptic()))
+                (node?.ready?.get("Calamansi") ?: 0) <= 0 -> Next(s, listOf(Effect.Toast("Slot 3 is empty at ${node?.shortName}", ToastIcon.Alert)))
                 else -> Next(
                     s.copy(customer = s.customer.copy(escrow = Escrow(s.activeNodeId, 3, "Calamansi Lime", now, now + Escrow.CLAIM_MS))),
-                    listOf(Effect.Toast("Coil #03 locked · claim within 5 min", ToastIcon.Lock), Effect.Haptic(strong = true), Effect.Log("lock", "${s.activeNodeId} coil 3")),
+                    listOf(Effect.Toast("Can on hold · pick it up within 5 min", ToastIcon.Lock), Effect.Haptic(strong = true), Effect.Log("lock", "${s.activeNodeId} coil 3")),
                 )
             }
             else -> Next(
@@ -490,9 +490,9 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
         val coil = sp.coil(sp.selected) ?: return Next(s)
         if (coil.level >= 15) return Next(s, listOf(Effect.Toast("${coil.id} is already full")))
         val isC3 = coil.id == "C3"
-        val ev = event(sp, FeedType.Restock, "Coil ${coil.id} Restocked", "${coil.name} · 15/15", clock,
-            if (isC3) "Depleted coil refilled. FIFO queue notified and urgent alert cleared." else "Coil topped up to capacity by runner Zhang.",
-            listOf("Verified by NFC Token"))
+        val ev = event(sp, FeedType.Restock, "Slot ${coil.id} restocked", "${coil.name} · 15/15", clock,
+            if (isC3) "Empty slot refilled. Waiting students were told and the alert is cleared." else "Slot filled to the top by runner Zhang.",
+            listOf("Checked by machine sensors"))
         return Next(
             s.copy(
                 supplier = sp.copy(

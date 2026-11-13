@@ -68,7 +68,7 @@ data class MapNode(
     val demo: Boolean = true,
 ) {
     val isLow: Boolean get() = status == "low"
-    val shortName: String get() = "Node $num"
+    val shortName: String get() = "Machine $num"
 }
 
 /** Pure search over a campus set: nodes first, then buildings. Matches EN + ZH names, codes and departments. */
@@ -88,7 +88,7 @@ object MapSearch {
             }
             for (n in campus.nodes) {
                 val b = campus.building(n.building)
-                val hay = (listOf(n.id, n.name, n.shortName, n.label, n.location, n.building) +
+                val hay = (listOf(n.id, n.name, n.shortName, "node ${n.num}", n.label, n.location, n.building) +
                     listOfNotNull(b?.name, b?.nameZh) + (b?.departments ?: emptyList()))
                     .joinToString("|").lowercase()
                 if (hay.contains(q)) nodes += n

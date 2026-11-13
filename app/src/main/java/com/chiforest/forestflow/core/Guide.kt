@@ -33,7 +33,7 @@ object Guide {
         add(
             GuideStep(
                 if (vip) "Hold a can · Notify Me" else "Notify Me · Get drop alerts", "3. Hold one, or get a ping",
-                if (vip) "Tap Hold a can to keep one for about 5 minutes. Sold out? Tap Notify Me and your phone buzzes when it’s back. Get drop alerts tells you about every new flavour."
+                if (vip) "Tap Hold to keep a can for about 5 minutes. Sold out? Tap Notify Me and your phone buzzes when it’s back. Get drop alerts tells you about every new flavour."
                 else "Sold out? Tap Notify Me and your phone buzzes when it’s back. Get drop alerts tells you about every new flavour.",
                 0,
             ),
@@ -50,13 +50,13 @@ object Guide {
 
     private fun supplier(): List<GuideStep> = listOf(
         GuideStep(
-            "Telemetry tab", "1. Watch the stock",
-            "The coil grid shows how full each of the 16 coils is. Red means empty. Tap a coil to see it and restock it. The AI card warns you before a drink runs out.",
+            "Telemetry tab", "1. Watch your machine",
+            "Telemetry is about the one machine you look after (Machine 01). Stock by slot shows how full each of its 16 slots is; red means empty. Tap a slot to restock it. The forecast card warns you before a drink runs out.",
             0,
         ),
         GuideStep(
             "Telemetry, then Dispatch", "2. Send a restock",
-            "On Telemetry, tap Dispatch Runner to raise a ticket. On Dispatch, tap Ping to send the runner, then Confirm Restock Loaded when the coils are full.",
+            "On Telemetry, tap Send runner. On Dispatch, tap Ping so the runner sets off, then Mark restock as done when the machine is full.",
             1,
         ),
         GuideStep(
@@ -66,7 +66,7 @@ object Guide {
         ),
         GuideStep(
             "Alerts and Stock tabs", "4. Keep an eye on it all",
-            "Alerts lists every empty coil, dispatch and price change. Stock shows every machine on both campuses, emptiest first.",
+            "Alerts lists every empty slot, runner trip and price change. Stock shows every machine on both campuses: tap Taicang or SIP at the top to switch.",
             3,
         ),
     )

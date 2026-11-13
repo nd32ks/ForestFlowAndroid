@@ -77,8 +77,8 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
             Chip(if (unread > 0) "All · $unread" else "All", nf == "all", { dispatch(Action.Nf("all")) })
             Chip("Restocks", nf == "restocks", { dispatch(Action.Nf("restocks")) }, icon = Ic.Box)
             if (vip) {
-                Chip("Escrow & Drops", nf == "escrow", { dispatch(Action.Nf("escrow")) }, icon = Ic.Lock)
-                Chip("VIP Privileges", nf == "vip", { dispatch(Action.Nf("vip")) }, icon = Ic.Star)
+                Chip("Holds & drops", nf == "escrow", { dispatch(Action.Nf("escrow")) }, icon = Ic.Lock)
+                Chip("VIP perks", nf == "vip", { dispatch(Action.Nf("vip")) }, icon = Ic.Star)
             }
         }
 
@@ -91,12 +91,12 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
                 Eyebrow("Active Restock Watchlist") {
                     Pill("$active Active", c.ink, c.surface)
                     Spacer(Modifier.width(6.dp))
-                    Pill("Node-Sync Live", c.green, c.greenTint, dot = true, pulse = true)
+                    Pill("Updates live", c.green, c.greenTint)
                 }
                 AnimatedVisibility(cu.osmanthusWatch, enter = expandVertically() + fadeIn(), exit = exit) {
                     WatchCard(
-                        "osmanthus", "Osmanthus Plum Sparkling", "Node 01 — Building G Atrium",
-                        RestockEta.forNode("N01", s.supplier)?.label ?: "Target Coil #04: Restocking Today 14:30", c.amber, c.amberTint,
+                        "osmanthus", "Osmanthus Plum Sparkling", "Machine 01 · Building G Atrium",
+                        RestockEta.forNode("N01", s.supplier)?.label ?: "Slot 4 is being restocked today at 14:30", c.amber, c.amberTint,
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             ForestButton("Check Live Status", { dispatch(Action.LiveStatus) }, Modifier.weight(1f), small = true, style = BtnStyle.Dark, icon = Ic.Activity)
@@ -106,8 +106,8 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
                 }
                 AnimatedVisibility(cu.peachWatch, enter = expandVertically() + fadeIn(), exit = exit) {
                     WatchCard(
-                        "white peach", "White Peach Sub-Chilled Restock", "Node 03 — Library 1F Hub",
-                        "Coil #02 · 0 Sugar · Chilled", c.blue, c.blueTint,
+                        "white peach", "White Peach back in stock", "Machine 03 · Library 1F Hub",
+                        "Slot 2 · 0 sugar · chilled", c.blue, c.blueTint,
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("Push App Alert", style = Type.body(12.sp, 600), color = c.ink)
@@ -120,7 +120,7 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
                     }
                 }
                 if (active == 0) {
-                    EmptyState(Ic.BellOff, "No restock alerts yet", "Tap Notify Me on an out-of-stock coil to join the FIFO queue.", "Browse Inventory") { dispatch(Action.Tab(0)) }
+                    EmptyState(Ic.BellOff, "No restock alerts yet", "Tap Notify Me on a sold-out drink. You get a ping when it is back, first come first served.", "Browse Inventory") { dispatch(Action.Tab(0)) }
                 }
             }
         }
@@ -140,9 +140,9 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
             ) {
                 Text(
                     buildAnnotatedString {
-                        append("Node 02 (AI Lab 2F) just filled with fresh batch. ")
+                        append("Machine 02 (AI Lab 2F) was just refilled. ")
                         withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = c.red)) { append("9 cans remaining") }
-                        append(" in rapid dispenser.")
+                        append(" left.")
                     },
                     style = Type.body(13.sp), color = c.muted,
                 )
@@ -159,10 +159,10 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
         }
         AnimatedVisibility(showTimeout, exit = exit) {
             FeedCard(
-                unread = "timeout" !in cu.read, tag = "ESCROW TIMEOUT", tagColor = c.amber, tagBg = c.amberTint, ago = "28m ago",
-                icon = Ic.Clock, title = "Coil #03 Escrow released",
+                unread = "timeout" !in cu.read, tag = "HOLD ENDED", tagColor = c.amber, tagBg = c.amberTint, ago = "28m ago",
+                icon = Ic.Clock, title = "Your hold on slot 3 ended",
             ) {
-                Text("Coil #03 Escrow released (expired 5-min pickup window). Tap below to instantly re-order.", style = Type.body(13.sp), color = c.muted)
+                Text("Your hold on slot 3 ended because the 5-minute pickup time ran out. Tap below to hold it again.", style = Type.body(13.sp), color = c.muted)
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ForestButton("Re-order Now", { dispatch(Action.Reorder(System.currentTimeMillis())) }, Modifier.weight(1f), small = true, style = BtnStyle.Dark, icon = Ic.Refresh)

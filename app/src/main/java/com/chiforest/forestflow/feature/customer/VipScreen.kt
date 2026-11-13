@@ -79,11 +79,11 @@ fun VipScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Action) ->
             val node = map.node(e.nodeId)
             ForestCard(Modifier.fillMaxWidth(), radius = 28.dp, padding = PaddingValues(18.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Pill("ACTIVE", c.green, c.greenTint, dot = true, pulse = true)
+                    Pill("Active", c.green, c.greenTint, dot = true)
                     Spacer(Modifier.width(6.dp))
-                    Pill("Slot · Coil #0${e.coil}", c.ink, c.surface2)
+                    Pill("Slot ${e.coil}", c.ink, c.surface2)
                     Spacer(Modifier.weight(1f))
-                    Pill("VIP Escrow", c.red, c.redTint, icon = Ic.Lock)
+                    Pill("On hold", c.red, c.redTint, icon = Ic.Lock)
                 }
                 Spacer(Modifier.height(14.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -91,7 +91,7 @@ fun VipScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Action) ->
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text("${e.product} Sparkling", style = Type.title(16.sp, 800), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text("330ml Can • Sub-Chilled", style = Type.body(12.sp), color = c.faint)
+                        Text("330ml can, chilled", style = Type.body(12.sp), color = c.faint)
                     }
                     Text("Qty 1", style = Type.num(13.sp, 700), color = c.muted)
                 }
@@ -103,7 +103,7 @@ fun VipScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Action) ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                     LiveDot(c.green, size = 7.dp)
                     Spacer(Modifier.width(6.dp))
-                    Text("Dispenser hold active at ${node?.shortName}", style = Type.body(12.sp, 600), color = c.muted)
+                    Text("Held for you at ${node?.shortName}", style = Type.body(12.sp, 600), color = c.muted)
                 }
                 Spacer(Modifier.height(16.dp))
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -113,7 +113,7 @@ fun VipScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Action) ->
                     )
                 }
                 Spacer(Modifier.height(8.dp))
-                Text("Target: Smart ${node?.shortName} Optical Port · tap to enlarge", style = Type.body(11.sp), color = c.faint, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                Text("Hold this to the scanner on ${node?.shortName} · tap to enlarge", style = Type.body(11.sp), color = c.faint, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                 Spacer(Modifier.height(14.dp))
                 Row(
                     Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.surface2).padding(start = 14.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
@@ -132,7 +132,7 @@ fun VipScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Action) ->
                 )
             }
         } else {
-            EmptyState(Ic.Qr, "No active escrow", "Lock a coil from Inventory and your claim QR appears here.", "Browse Inventory") { dispatch(Action.Tab(0)) }
+            EmptyState(Ic.Qr, "No can on hold", "Tap Hold on the Inventory tab to keep a can for 5 minutes. Your pickup QR code appears here.", "Browse Inventory") { dispatch(Action.Tab(0)) }
         }
 
         VipCard()
@@ -202,7 +202,7 @@ private fun VipCard() {
             Spacer(Modifier.height(12.dp))
             Text("ACTIVE PRIVILEGES", style = Type.eyebrow(9.sp), color = Color.White.copy(alpha = 0.5f))
             Spacer(Modifier.height(4.dp))
-            for (p in listOf("Priority drop reserve coil access", "10-minute escrow lock window guarantee", "10% campus automated dispenser discount")) {
+            for (p in listOf("First pick of new drops", "Hold a can for up to 10 minutes", "10% off at every campus machine")) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Ic.Check, null, tint = Color(0xFF3DDC97), modifier = Modifier.size(12.dp))
                     Spacer(Modifier.width(6.dp))
@@ -255,11 +255,11 @@ fun QrSheet(s: AppState, map: MapData, dispatch: (Action) -> Unit) {
     ForestSheet(onDismiss = { dispatch(Action.CloseSheet) }) {
         SheetTitle("Scan at the machine", "Hold the phone 10–15 cm from the optical port") { dispatch(Action.CloseSheet) }
         if (e == null) {
-            Text("No active escrow.", style = Type.body(14.sp), color = c.faint)
+            Text("No can on hold.", style = Type.body(14.sp), color = c.faint)
         } else {
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { QrCode(escrowPayload(e), Modifier.fillMaxWidth(0.86f).aspectRatio(1f)) }
             Spacer(Modifier.height(12.dp))
-            Text("${map.node(e.nodeId)?.name} · Coil #0${e.coil} · ${Escrow.BACKUP_CODE}", style = Type.mono(13.sp, 600), color = c.muted, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+            Text("${map.node(e.nodeId)?.name} · slot ${e.coil} · code ${Escrow.BACKUP_CODE}", style = Type.mono(13.sp, 600), color = c.muted, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         }
     }
 }

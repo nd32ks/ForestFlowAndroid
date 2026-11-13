@@ -222,7 +222,7 @@ private fun RoleShell(s: AppState, now: State<Long>, role: Role, vm: AppViewMode
                     2 -> NotificationsScreen(s, dispatch)
                     else -> VipScreen(s, now, map, dispatch)
                 } else when (t) {
-                    0 -> TelemetryScreen(s, vm::clock, dispatch)
+                    0 -> TelemetryScreen(s, map, vm::clock, dispatch)
                     1 -> DispatchScreen(s, vm::clock, dispatch)
                     2 -> AlertsScreen(s, dispatch)
                     else -> com.chiforest.forestflow.feature.supplier.StockScreen(s, map, dispatch)
@@ -231,8 +231,8 @@ private fun RoleShell(s: AppState, now: State<Long>, role: Role, vm: AppViewMode
         }
 
         val subtitle = when {
-            !student && tab == 3 -> "All stations · Taicang + SIP"
-            !student -> "Node 01 Admin · Taicang"
+            !student && tab == 3 -> "All machines · Taicang and SIP"
+            !student -> "Machine 01 · Bldg G · Taicang"
             tab == 1 -> map.campus(s.campusId).subtitle
             else -> {
                 val n = map.node(s.activeNodeId)
@@ -294,9 +294,9 @@ private fun ProfileSheet(s: AppState, vm: AppViewModel, dispatch: (Action) -> Un
         SheetTitle(session.displayName, if (session.role == Role.Student) "Student · Campus app" else "Supplier · Admin console") { dispatch(Action.CloseSheet) }
         InfoRow("Role", session.role.name)
         Hairline()
-        InfoRow("Station", if (session.role == Role.Student) "${node?.shortName} · ${node?.label}" else "Node 01 · Bldg G Atrium")
+        InfoRow("Machine", if (session.role == Role.Student) "${node?.shortName} · ${node?.label}" else "Machine 01 · Bldg G Atrium")
         Hairline()
-        InfoRow("Session", buildString {
+        InfoRow("Signed in with", buildString {
             append(
                 when (session.method) {
                     "wechat" -> "WeChat (demo)"
@@ -308,12 +308,12 @@ private fun ProfileSheet(s: AppState, vm: AppViewModel, dispatch: (Action) -> Un
             session.email?.let { append(" · $it") }
         })
         Hairline()
-        InfoRow("Database", "SQLite · forestflow.db")
+        InfoRow("Your data", "Saved on this phone")
         Spacer(Modifier.height(14.dp))
-        Text("RECENT ACTIVITY · activity_log", style = Type.eyebrow(10.sp), color = c.faint)
+        Text("Your recent actions", style = Type.body(12.sp, 700), color = c.faint)
         Spacer(Modifier.height(6.dp))
         if (activity.isEmpty()) {
-            Text("No actions logged yet.", style = Type.body(13.sp), color = c.faint)
+            Text("Nothing yet. Things you do in the app show up here.", style = Type.body(13.sp), color = c.faint)
         } else {
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.surface2).padding(horizontal = 12.dp, vertical = 6.dp)) {
                 activity.take(6).forEach { LogLine(it) }

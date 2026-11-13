@@ -213,24 +213,24 @@ object Seed {
     )
 
     val feed = listOf(
-        FeedEvent("f1", FeedType.Escrow, "VIP Escrow", "hold 10:00", "13:48 · 2m ago",
-            "Student #8821 holds Coil A1 White Peach (Tier 2 VIP pass auto-assigned).", listOf("Engaged")),
+        FeedEvent("f1", FeedType.Escrow, "Can on hold", "10 min left", "13:48 · 2m ago",
+            "A VIP student is holding a White Peach from slot A1.", listOf("Held")),
         FeedEvent("f2", FeedType.Restock, "Restock Confirmed", "Zhang — stock 100%", "13:47 · 3m ago",
-            "Node 01 inventory synced to campus network. Sensor calibration passed with 0 variance.",
-            listOf("Verified by NFC Token", "Batch #CF-2024-T01")),
-        FeedEvent("f3", FeedType.Fifo, "FIFO Notification Push", "18 students (queue)", "13:46 · 4m ago",
-            "Push notifications dispatched to waiting student wishlist & cart holds. Peak hour crowd surge at 13:50 managed.",
-            listOf("18 Sent · 100% Delivery", "WeChat & UniApp Gateway")),
+            "Machine 01 stock updated for the whole campus. The stock sensors checked out fine.",
+            listOf("Checked by machine sensors")),
+        FeedEvent("f3", FeedType.Fifo, "Waiting students told", "18 students", "13:46 · 4m ago",
+            "The 18 students waiting for a sold-out drink got a phone alert before the 13:50 rush.",
+            listOf("18 alerts sent")),
         FeedEvent("f4", FeedType.Clearance, "Clearance −20% Approved", "Osmanthus Plum", "13:45 · 5m ago",
             "Price adjusted to ¥4.40 across digital shelf tags. Algorithmic freshness promotion applied.",
             listOf("E-Ink Shelf Updated", "Old Price ¥5.50")),
-        FeedEvent("f5", FeedType.Stockout, "Coil C3 Empty", "Osmanthus Plum", "13:41 · 9m ago",
+        FeedEvent("f5", FeedType.Stockout, "Slot C3 empty", "Osmanthus Plum", "13:41 · 9m ago",
             "Dispensed can #318 triggered zero sensor reading. Runner Zhang assigned automatically.",
             listOf("Zero Units Left", "Chamber 3.8°C nominal")),
     )
 
     val drops = listOf(
-        Drop("d1", "Yuzu Sparkling Pilot", "柚子气泡水 · 试饮", 150, "Pilot batch · Node 01 only"),
+        Drop("d1", "Yuzu Sparkling Pilot", "柚子气泡水 · 试饮", 150, "Pilot batch · Machine 01 only"),
         Drop("d2", "Sakura Peach Limited", "樱花白桃 · 限定", 220, "Spring limited · 2 per pass"),
         Drop("d3", "Oolong Zero Trial", "乌龙零糖 · 体验装", 90, "Tasting can · any node"),
     )

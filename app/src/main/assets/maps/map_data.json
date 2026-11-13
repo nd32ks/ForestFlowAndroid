@@ -230,7 +230,7 @@
     {
      "id": "N01",
      "num": "01",
-     "name": "Chi Forest Smart Node 01",
+     "name": "Chi Forest Machine 01",
      "label": "Bldg G Atrium",
      "building": "G",
      "location": "Bldg G Ground Floor Atrium",
@@ -261,7 +261,7 @@
     {
      "id": "N02",
      "num": "02",
-     "name": "Chi Forest Smart Node 02",
+     "name": "Chi Forest Machine 02",
      "label": "AI Lab 2F",
      "building": "D",
      "location": "Bldg D · AI Lab 2F",
@@ -292,7 +292,7 @@
     {
      "id": "N03",
      "num": "03",
-     "name": "Chi Forest Smart Node 03",
+     "name": "Chi Forest Machine 03",
      "label": "Library 1F Hub",
      "building": "D",
      "location": "Bldg D · Library 1F Hub",
@@ -323,7 +323,7 @@
     {
      "id": "N04",
      "num": "04",
-     "name": "Chi Forest Smart Node 04",
+     "name": "Chi Forest Machine 04",
      "label": "Bldg F Restaurant",
      "building": "F",
      "location": "Bldg F · Western Restaurant",
@@ -354,7 +354,7 @@
     {
      "id": "N05",
      "num": "05",
-     "name": "Chi Forest Smart Node 05",
+     "name": "Chi Forest Machine 05",
      "label": "Bldg A Dining",
      "building": "A",
      "location": "Bldg A · Dining Hall",
@@ -385,7 +385,7 @@
     {
      "id": "N06",
      "num": "06",
-     "name": "Chi Forest Smart Node 06",
+     "name": "Chi Forest Machine 06",
      "label": "Scholar Space",
      "building": "B",
      "location": "Bldg B · Scholar Space",
@@ -680,7 +680,7 @@
     {
      "id": "N07",
      "num": "07",
-     "name": "Chi Forest Smart Node 07",
+     "name": "Chi Forest Machine 07",
      "label": "CB Ground Floor",
      "building": "CB",
      "location": "Central Building · Ground Floor",
@@ -711,7 +711,7 @@
     {
      "id": "N08",
      "num": "08",
-     "name": "Chi Forest Smart Node 08",
+     "name": "Chi Forest Machine 08",
      "label": "SA Lobby",
      "building": "SA",
      "location": "Science Building A · Lobby",
@@ -742,7 +742,7 @@
     {
      "id": "N09",
      "num": "09",
-     "name": "Chi Forest Smart Node 09",
+     "name": "Chi Forest Machine 09",
      "label": "FB Atrium",
      "building": "FB",
      "location": "Foundation Building · Atrium",
@@ -773,7 +773,7 @@
     {
      "id": "N10",
      "num": "10",
-     "name": "Chi Forest Smart Node 10",
+     "name": "Chi Forest Machine 10",
      "label": "IBSS Café",
      "building": "BS",
      "location": "IBSS · Level 1 Café",
@@ -804,7 +804,7 @@
     {
      "id": "N11",
      "num": "11",
-     "name": "Chi Forest Smart Node 11",
+     "name": "Chi Forest Machine 11",
      "label": "Design Studio",
      "building": "DB",
      "location": "Design Building · Studio Wing",
