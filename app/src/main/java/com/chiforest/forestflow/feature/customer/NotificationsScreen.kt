@@ -141,8 +141,8 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
                 Text(
                     buildAnnotatedString {
                         append("Machine 02 (AI Lab, 2F) was just refilled. ")
-                        withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = c.red)) { append("9 cans remaining") }
-                        append(" left.")
+                        withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = c.red)) { append("9 cans left") }
+                        append(".")
                     },
                     style = Type.body(13.sp), color = c.muted,
                 )
