@@ -115,7 +115,7 @@ fun MapScreen(s: AppState, map: MapData, dispatch: (Action) -> Unit) {
                             modifier = Modifier.weight(1f).semantics { contentDescription = "Search nodes or buildings" },
                             decorationBox = { inner ->
                                 Box(contentAlignment = Alignment.CenterStart) {
-                                    if (s.search.isEmpty()) Text("Search machines or buildings…", style = Type.body(15.sp), color = c.faint, maxLines = 1)
+                                    if (s.search.isEmpty()) Text("Search drinks, machines or buildings…", style = Type.body(15.sp), color = c.faint, maxLines = 1)
                                     inner()
                                 }
                             },
@@ -215,12 +215,39 @@ fun MapScreen(s: AppState, map: MapData, dispatch: (Action) -> Unit) {
                     Modifier.fillMaxWidth().heightIn(max = 340.dp).softCard(RoundedCornerShape(22.dp))
                         .verticalScroll(rememberScrollState()).padding(vertical = 6.dp),
                 ) {
-                    if (results.nodes.isEmpty() && results.buildings.isEmpty()) {
+                    if (results.nodes.isEmpty() && results.buildings.isEmpty() && results.drinks.isEmpty()) {
                         Column(Modifier.padding(16.dp)) {
                             Text("No results for “${s.search}”", style = Type.body(14.sp), color = c.faint)
-                            Text("Try a building letter like G, a machine number like 02, or a place like “Library”.", style = Type.body(12.sp), color = c.faint)
+                            Text("Try a drink like “Lychee”, a building letter like G, a machine number like 02, or a place like “Library”.", style = Type.body(12.sp), color = c.faint)
                         }
                     }
+                    // Drinks first: "where can I buy X?" (user testing). Machines on your campus come first, nearest first.
+                    val home = map.campusOfNode(s.youAreHereNodeId)?.id ?: campus.id
+                    results.drinks.forEach { hit ->
+                        val p = hit.product
+                        if (hit.stock.isEmpty()) {
+                            val watching = isWatching(s, p.key)
+                            ResultRow(Ic.Bell, c.amber, "${p.name} · sold out everywhere",
+                                if (watching) "You'll get an alert when it's back" else "Tap to get an alert when it's back") {
+                                focus.clearFocus()
+                                if (!watching) dispatch(Action.Watch(p.key))
+                            }
+                        } else {
+                            val (here, other) = hit.stock.partition { map.campusOfNode(it.first.id)?.id == home }
+                            Text("${p.name.uppercase()} · IN STOCK AT ${hit.stock.size} MACHINE${if (hit.stock.size > 1) "S" else ""}",
+                                style = Type.eyebrow(10.sp), color = c.muted, modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 2.dp))
+                            (here + other).forEach { (n, count) ->
+                                val cp = map.campusOfNode(n.id)
+                                val where = if (cp?.id == home) "${n.walkMin} min walk" else "${cp?.name} campus"
+                                ResultRow(Ic.Vending, c.green, "${p.name} at ${n.shortName}", "${n.label} · $count left · $where") {
+                                    focus.clearFocus()
+                                    dispatch(Action.Search(""))
+                                    dispatch(Action.Pin(n.id))
+                                }
+                            }
+                        }
+                    }
+                    if (results.drinks.isNotEmpty() && (results.nodes.isNotEmpty() || results.buildings.isNotEmpty())) Hairline(Modifier.padding(vertical = 4.dp))
                     results.nodes.forEach { n ->
                         val cp = map.campusOfNode(n.id)
                         ResultRow(Ic.Vending, c.red, n.shortName, "${n.label} · ${cp?.name} ${cp?.nameZh}") {
@@ -231,7 +258,7 @@ fun MapScreen(s: AppState, map: MapData, dispatch: (Action) -> Unit) {
                     }
                     results.buildings.forEach { (cp, b) ->
                         val nodeHere = cp.nodes.firstOrNull { it.building.equals(b.code, true) }
-                        ResultRow(Ic.Building, c.blue, "Building ${b.code} · ${b.nameZh}", "${b.name} · ${cp.name}${if (nodeHere == null) " · no node" else ""}") {
+                        ResultRow(Ic.Building, c.blue, "Building ${b.code} · ${b.nameZh}", "${b.name} · ${cp.name}${if (nodeHere == null) " · no machine" else ""}") {
                             focus.clearFocus()
                             if (nodeHere != null) {
                                 dispatch(Action.Search(""))

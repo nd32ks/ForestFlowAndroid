@@ -533,7 +533,10 @@ class Reducer(private val map: MapData, private val seedEscrow: Boolean = true) 
                 else -> true
             }
             val b = building == null || node.building.equals(building, ignoreCase = true)
-            val q = query.isBlank() || MapSearch.search(map, query).nodes.any { it.id == node.id }
+            val q = query.isBlank() || MapSearch.search(map, query).let { r ->
+                // a drink search shows the machines that have that drink
+                r.nodes.any { it.id == node.id } || r.drinks.any { d -> d.stock.any { it.first.id == node.id } }
+            }
             return f && b && q
         }
     }

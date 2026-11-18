@@ -349,6 +349,7 @@ private fun HowToBuy() {
             "2. Tap Route to walk to the machine. The map shows the building and floor.",
             "3. Pay at the machine itself; the app does not take payment. Tap Hold first to keep one for 5 minutes.",
             "Sold out? The card shows the nearest machine that still has it.",
-        ).forEach { Text(it, style = Type.body(13.sp), color = c.muted) }
+        ).plus(if (Features.campusMap) listOf("Want one drink in particular? Type its name in the Campus Map search to see every machine that has it.") else emptyList())
+            .forEach { Text(it, style = Type.body(13.sp), color = c.muted) }
     }
 }

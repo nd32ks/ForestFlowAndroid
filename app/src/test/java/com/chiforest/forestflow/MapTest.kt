@@ -53,6 +53,26 @@ class MapTest {
         assertEquals(1000f / 1000f * 0.995f / 0.005f, MapGeo.project(1000f), 1e-3f)
     }
 
+    @Test fun drink_search_lists_machines_with_stock() {
+        val hit = MapSearch.search(map, "lychee").drinks.single()
+        assertEquals("Lychee", hit.product.key)
+        assertTrue(hit.stock.isNotEmpty())
+        assertTrue(hit.stock.all { (n, count) -> count > 0 && (n.ready["Lychee"] ?: 0) == count })
+        assertEquals(hit.stock.map { it.first.walkMin }.sorted(), hit.stock.map { it.first.walkMin })
+        // machines with none left are not listed
+        val calamansi = MapSearch.search(map, "calamansi").drinks.single()
+        assertTrue(calamansi.stock.none { it.first.id == "N06" || it.first.id == "N11" })
+        // Chinese name works, one Latin letter does not flood the list
+        assertTrue(MapSearch.search(map, "荔枝").drinks.any { it.product.key == "Lychee" })
+        assertTrue(MapSearch.search(map, "a").drinks.isEmpty())
+        assertTrue(MapSearch.search(map, "library").drinks.isEmpty())
+        // the map pins follow a drink search: only machines that have it
+        val tc = map.campuses.first { it.id == "tc" }
+        val pinned = tc.nodes.filter { com.chiforest.forestflow.core.Reducer.matches(it, "all", null, "calamansi", map) }.map { it.id }
+        assertTrue("N01" in pinned)
+        assertTrue("N06" !in pinned)
+    }
+
     @Test fun search_matches_en_zh_codes_and_departments() {
         assertTrue(MapSearch.search(map, "library").nodes.any { it.id == "N03" })
         assertTrue(MapSearch.search(map, "图书馆").buildings.any { it.second.code == "D" })

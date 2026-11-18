@@ -161,7 +161,7 @@ class AppFlowTest {
 
         // ---- Map: search, select, campus switch, directions, layers, bookmark, view stock
         nav("Campus Map")
-        see("Search machines or buildings…")
+        see("Search drinks, machines or buildings…")
         rule.onAllNodes(hasContentDescription("Search nodes or buildings")).onFirst().performTextInput("library")
         see("Library Hub · 1F", substring = true)
         tap("Machine 03")
