@@ -155,7 +155,7 @@ class AppFlowTest {
         }
         swipePage(left = true, yFrac = 0.35f)        // Inventory -> Campus Map
         see("Drink, machine or building…")
-        swipePage(left = false, yFrac = 0.80f)       // below the map: Campus Map -> Inventory
+        swipePage(left = false, yFrac = 0.27f)       // on the campus switch above the map (the map itself pans): Campus Map -> Inventory
         see("DRINKS IN THIS MACHINE")
     }
 

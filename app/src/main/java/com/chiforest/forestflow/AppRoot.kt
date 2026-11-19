@@ -259,7 +259,7 @@ private fun RoleShell(s: AppState, now: State<Long>, role: Role, vm: AppViewMode
 
         val subtitle = when {
             !student && tab == 3 -> "All machines · Taicang and SIP"
-            !student -> "Machine 01 · Building G · Taicang"
+            !student -> "Machine 01 · Taicang"
             tab == 1 -> map.campus(s.campusId).subtitle
             else -> {
                 val n = map.node(s.activeNodeId)

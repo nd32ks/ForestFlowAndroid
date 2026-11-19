@@ -738,7 +738,7 @@ fun StockScreen(s: AppState, map: com.chiforest.forestflow.core.MapData, dispatc
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(vertical = 3.dp)) {
                     row.forEach { k ->
                         Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(c.surface2).padding(8.dp)) {
-                            Text(k, style = Type.body(10.sp, 600), color = c.faint, maxLines = 1)
+                            Text(k, style = Type.body(10.sp, 600), color = c.faint, maxLines = 1, softWrap = false, overflow = TextOverflow.Visible)
                             Text("${nodes.sumOf { it.ready[k] ?: 0 }}", style = Type.num(16.sp, 800), color = c.ink)
                         }
                     }
@@ -750,7 +750,7 @@ fun StockScreen(s: AppState, map: com.chiforest.forestflow.core.MapData, dispatc
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text("${n.shortName} · ${n.label}", style = Type.title(14.sp, 800), color = c.ink, maxLines = 1)
-                        Text("Building ${n.building} · ${n.location}", style = Type.body(11.sp), color = c.faint, maxLines = 1)
+                        Text(n.location, style = Type.body(11.sp), color = c.faint, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     Pill(if (n.isLow) "low" else "online", if (n.isLow) c.amber else c.green, if (n.isLow) c.amberTint else c.greenTint)
                 }
