@@ -111,8 +111,8 @@ class LocalAuthRepository(private val db: ForestDatabase) : AuthRepository {
     }
 
     companion object {
-        const val DEMO_STUDENT = "student@xjtlu.test"
-        const val DEMO_SUPPLIER = "supplier@xjtlu.test"
+        const val DEMO_STUDENT = "student@example.com"
+        const val DEMO_SUPPLIER = "supplier@example.com"
         const val DEMO_PASSWORD = "forest123"
     }
 }

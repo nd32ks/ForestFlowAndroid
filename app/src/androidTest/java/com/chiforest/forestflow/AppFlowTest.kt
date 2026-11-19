@@ -1,5 +1,8 @@
 package com.chiforest.forestflow
 
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.swipe
 import android.content.Context
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
@@ -8,6 +11,7 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
@@ -16,7 +20,9 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.chiforest.forestflow.core.ForestDatabase
+import com.chiforest.forestflow.BuildConfig
 import org.junit.After
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -30,6 +36,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class AppFlowTest {
     @get:Rule val rule = createEmptyComposeRule()
+    @get:Rule val notifications: androidx.test.rule.GrantPermissionRule = androidx.test.rule.GrantPermissionRule.grant(android.Manifest.permission.POST_NOTIFICATIONS)
     private val ctx: Context = ApplicationProvider.getApplicationContext()
     private var scenario: ActivityScenario<MainActivity>? = null
 
@@ -47,7 +54,7 @@ class AppFlowTest {
 
     // ------------------------------------------------------------ helpers
     private fun text(t: String, substring: Boolean = false): SemanticsNodeInteraction {
-        rule.waitUntil(8_000) { rule.onAllNodes(hasText(t, substring = substring), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+        try { rule.waitUntil(8_000) { rule.onAllNodes(hasText(t, substring = substring), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() } } catch (e: Throwable) { val seen = rule.onAllNodes(androidx.compose.ui.test.hasText("", substring = true), useUnmergedTree = true).fetchSemanticsNodes().mapNotNull { n -> n.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.Text) { null }?.joinToString() }.take(60); throw AssertionError("Text not found: \"$t\" | on screen: $seen", e) }
         return rule.onAllNodes(hasText(t, substring = substring), useUnmergedTree = true).onFirst()
     }
 
@@ -91,6 +98,13 @@ class AppFlowTest {
         rule.waitForIdle()
     }
 
+    /** Every sign-in opens the how-it-works guide; this closes it the way a user would. */
+    private fun skipGuide() {
+        see("Step 1 of", substring = true)
+        tap("Skip")
+        gone("Step 1 of", substring = true)
+    }
+
     private fun agreeAndLogin(supplier: Boolean) {
         see("元气森林 Chi Forest")
         if (supplier) tap("补货供货商 Supplier")
@@ -99,6 +113,7 @@ class AppFlowTest {
         see("Please accept the user agreement first")
         tap("我已阅读", substring = true)
         tap(if (supplier) "微信登录 · Supplier WeChat" else "微信一键登录 · WeChat Login")
+        skipGuide()
     }
 
     // ------------------------------------------------------------ tests
@@ -115,7 +130,8 @@ class AppFlowTest {
         see("482915")
         tap("登录并解锁冷柜 / Sign In")
         see("Welcome", substring = true)
-        see("TRAY COIL INVENTORY")
+        skipGuide()
+        see("DRINKS IN THIS MACHINE")
     }
 
     @Test fun cas_login_with_database_account() {
@@ -124,53 +140,73 @@ class AppFlowTest {
         see("Demo account · tap to fill")
         tap("Demo account · tap to fill")
         tap("Sign in")
-        see("Welcome, Demo Student", substring = true)
-        see("TRAY COIL INVENTORY")
+        // the account server may be unreachable: the app waits up to 6 s, then signs in on this phone
+        rule.waitUntil(20_000) { rule.onAllNodes(hasText("Welcome, Demo Student", substring = true), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+        skipGuide()
+        see("DRINKS IN THIS MACHINE")
+    }
+
+    @Test fun swipe_moves_between_tabs() {
+        agreeAndLogin(supplier = false)
+        see("DRINKS IN THIS MACHINE")
+        fun swipePage(left: Boolean, yFrac: Float) = rule.onRoot().performTouchInput {
+            val y = height * yFrac
+            val (a, b) = if (left) width * 0.85f to width * 0.15f else width * 0.15f to width * 0.85f
+            swipe(androidx.compose.ui.geometry.Offset(a, y), androidx.compose.ui.geometry.Offset(b, y), 250)
+        }
+        swipePage(left = true, yFrac = 0.35f)        // Inventory -> Campus Map
+        see("Drink, machine or building…")
+        // on the campus switch above the map (the map itself pans): Campus Map -> Inventory
+        rule.onAllNodes(hasText("Taicang 太仓"), useUnmergedTree = true).onFirst().performTouchInput {
+            swipe(androidx.compose.ui.geometry.Offset(10f, centerY), androidx.compose.ui.geometry.Offset(10f + 700f, centerY), 250)
+        }
+        see("DRINKS IN THIS MACHINE")
     }
 
     @Test fun student_full_flow() {
+        assumeTrue("needs every feature switched on", BuildConfig.FEATURE_VIP_CLUB && BuildConfig.FEATURE_CAMPUS_MAP)
         agreeAndLogin(supplier = false)
-        see("TRAY COIL INVENTORY")
+        see("DRINKS IN THIS MACHINE")
 
         // ---- Inventory
-        see("1 Lock in Escrow")
+        see("1 can on hold for you")
         tap("Release")
-        gone("1 Lock in Escrow")
-        tap("Lock")
-        see("Coil #03 locked", substring = true)
-        see("1 Lock in Escrow")
+        gone("1 can on hold for you")
+        tap("Hold")
+        see("Can on hold", substring = true)
+        see("1 can on hold for you")
         tap("Notify Me")
         see("Subscribed")
         tap("I'm Here")
-        see("Checked in at Node 01", substring = true)
+        see("Checked in at Machine 01", substring = true)
 
         // ---- Map: search, select, campus switch, directions, layers, bookmark, view stock
         nav("Campus Map")
-        see("Search nodes or buildings…")
+        see("Drink, machine or building…")
         rule.onAllNodes(hasContentDescription("Search nodes or buildings")).onFirst().performTextInput("library")
-        see("Library 1F Hub", substring = true)
-        tap("Node 03")
-        see("Chi Forest Smart Node 03")
+        see("Library Hub · 1F", substring = true)
+        tap("Machine 03")
+        see("Chi Forest Machine 03")
         tap("Directions")
         see("Directions started", substring = true)
         see("Clear Route")
         see("5 min walk") // chip drawn on the map above the pins
         tap("Bookmark node")
-        see("Node 03 saved")
+        see("Machine 03 saved")
         tap("Remove bookmark")
-        see("Node 03 removed from saved")
+        see("Machine 03 removed from saved")
         tap("Map layers")
         see("Map Layers")
         tap("Entrances")
         tap("Close")
         tap("Reset map view")
         tap("Locate me")
-        see("Located you near Bldg G", substring = true)
+        see("Located you near Building G", substring = true)
         tap("High Stock")
         tap("SIP 园区")
-        see("Chi Forest Smart Node 07")
+        see("Chi Forest Machine 07")
         tap("View Stock")
-        see("STATION · NODE 07", substring = true)
+        see("Nearest machine · Machine 07", substring = true)
 
         // ---- Notifications
         nav("Notifications")
@@ -179,8 +215,8 @@ class AppFlowTest {
         tap("Mark All Read")
         see("All caught up")
         tap("Check Live Status")
-        see("restocking today 14:30", substring = true)
-        tap("Escrow & Drops")
+        see("being restocked at 14:30", substring = true)
+        tap("Holds & drops")
         see("URGENT DROP ALERT")
         tap("Dismiss")
         gone("URGENT DROP ALERT")
@@ -199,7 +235,7 @@ class AppFlowTest {
 
         // ---- Profile: activity log comes from SQLite, then sign out
         tap("Profile")
-        see("RECENT ACTIVITY · activity_log")
+        see("Your recent actions")
         see("redeem", substring = true)
         tap("Sign out")
         see("元气森林 Chi Forest")
@@ -207,46 +243,210 @@ class AppFlowTest {
 
     @Test fun supplier_full_flow() {
         agreeAndLogin(supplier = true)
-        see("Coil Tray Matrix")
+        see("Stock by slot")
 
         // ---- Telemetry
         see("42%")
         tap("C3 Osmanthus Plum, 0 of 15")
-        see("0 cans left · 18 queued · Depleted at 13:41")
+        see("0 cans left · ran out at 13:41 · 18 students waiting")
         tap("Restock")
         see("C3 restocked · 15/15")
         see("Full")
         tap("14:00: 120 cans")
-        see("120 PEAK")
-        tap("Dispatch Runner")
+        see("120 cans, peak")
+        tap("Send runner")
         see("Dispatch ticket sent to Zhang")
 
         // ---- Dispatch
-        see("Node 01 Restock Routine")
+        see("Restock for Machine 01")
         tap("Call")
         see("Calling Zhang", substring = true)
         tap("Approve Price Cut")
-        see("Price cut live · ¥4.40")
-        tap("Simulate Foot-Traffic Surge")
-        see("Surge simulated", substring = true)
-        tap("Confirm Restock Loaded")
-        see("Restock Confirmed")
-        see("Node 01 restocked to 100%")
+        see("Price cut live · Barley ¥4.40")
+        tap("Simulate a lunch rush")
+        see("Rush simulated", substring = true)
+        tap("Mark restock as done")
+        see("Restock done")
+        see("Machine 01 is full again")
 
         // ---- Alerts (badge cleared on open)
         nav("Alerts")
-        see("Live Alert Gateway")
-        see("No urgent alerts · all coils stocked")
+        see("Alerts to your phone")
+        see("Nothing needs action. Every slot has stock.")
         tap("Restocks", substring = true)
-        see("Coil C3 Restocked")
-        tap("Alert gateway live")
-        see("Alert gateway muted")
+        see("Slot C3 restocked")
+        tap("Phone alerts on")
+        see("Alerts muted")
 
         // ---- Reset demo data keeps session
         tap("Profile")
         tap("Reset demo data")
         see("Demo data reset")
         nav("Telemetry")
-        see("0 cans left · 18 queued · Depleted at 13:41", substring = true)
+        see("0 cans left · ran out at 13:41 · 18 students waiting", substring = true)
+    }
+
+    @Test fun student_secondary_actions() {
+        assumeTrue("needs every feature switched on", BuildConfig.FEATURE_VIP_CLUB && BuildConfig.FEATURE_CAMPUS_MAP)
+        agreeAndLogin(supplier = false)
+        see("DRINKS IN THIS MACHINE")
+
+        // Inventory: Route and coil Navigate both open the map on the active node
+        tap("Route")
+        see("You're already at Machine 01")
+        see("Chi Forest Machine 01")
+        nav("Inventory")
+        tap("Navigate")
+        see("Slot 1 at Machine 01 shown on the map")
+
+        // Map: pin tap, building filter sheet, layers with labels, stations list
+        tap("Machine 05,", substring = true)
+        see("Chi Forest Machine 05")
+        tap("Building …")
+        see("Buildings")
+        tap("Building A · A栋")
+        see("Building A")
+        tap("All machines (6)", substring = true)
+        tap("Map layers")
+        tap("Entrances")
+        tap("Points of interest")
+        tap("Close")
+        see("East Gate 东门")
+        see("Mini Hub · 西浦小屋")
+        rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Search nodes or buildings")).onFirst().performTextInput("node")
+        tap("All stations list")
+        see("All machines")
+        tap("Machine 09 · FB Atrium · 1F")
+        see("Chi Forest Machine 09")
+
+        // Notifications: switches, preferences, unsubscribe → empty state, hold & re-order
+        nav("Notifications")
+        tap("Push App Alert")
+        see("App alerts off")
+        tap("SMS Drop")
+        see("SMS drop alerts on")
+        tap("Quiet Campus Hours")
+        tap("Unsubscribe")
+        see("No restock alerts yet")
+        tap("Navigate & Hold")
+        see("Directions to Machine 02")
+        see("Chi Forest Machine 02")
+        nav("Notifications")
+        tap("Re-order Now")
+        see("You already have a can on hold")
+        see("TIME REMAINING TO CLAIM")
+
+        // VIP: enlarge QR, then release the escrow and see the empty state
+        tap("QR code for chiforest://escrow", substring = true)
+        see("Scan at the machine")
+        tap("Close")
+        nav("Inventory")
+        tap("Release")
+        nav("VIP Pass")
+        see("No can on hold")
+        nav("Notifications")
+        tap("Re-order Now")
+        see("Held again · slot 3 is yours for 5 min")
+        see("TIME REMAINING TO CLAIM")
+
+        // Sign out, then the Visitor path
+        tap("Profile")
+        tap("Sign out")
+        tap("我已阅读", substring = true)
+        tap("访客 / 教职工")
+        see("Welcome, Campus Visitor", substring = true)
+        skipGuide()
+    }
+
+    @Test fun supplier_secondary_actions() {
+        agreeAndLogin(supplier = true)
+        see("Stock by slot")
+        nav("Dispatch")
+        tap("Ping")
+        see("Zhang pinged", substring = true)
+        see("On the way")
+        tap("Dismiss")
+        gone("Barley")
+        see("Electro")
+        nav("Alerts")
+        tap("Ping Runner")
+        see("Runner Zhang pinged")
+        see("Runner Pinged")
+        tap("Run out", substring = true)
+        see("Slot C3 empty")
+        gone("On hold")
+        tap("Price cuts", substring = true)
+        see("Clearance −20% Approved")
+    }
+
+    /** Share leaves the app (system share sheet), so the outgoing intent itself is captured and checked. */
+    @Test fun share_sends_station_text_and_link() {
+        androidx.test.espresso.intent.Intents.init()
+        try {
+            androidx.test.espresso.intent.Intents.intending(
+                androidx.test.espresso.intent.matcher.IntentMatchers.hasAction(android.content.Intent.ACTION_CHOOSER),
+            ).respondWith(android.app.Instrumentation.ActivityResult(android.app.Activity.RESULT_OK, null))
+            agreeAndLogin(supplier = false)
+            see("DRINKS IN THIS MACHINE")
+            tap("Share")
+            androidx.test.espresso.intent.Intents.intended(
+                org.hamcrest.Matchers.allOf(
+                    androidx.test.espresso.intent.matcher.IntentMatchers.hasAction(android.content.Intent.ACTION_CHOOSER),
+                    androidx.test.espresso.intent.matcher.IntentMatchers.hasExtra(
+                        org.hamcrest.Matchers.equalTo(android.content.Intent.EXTRA_INTENT),
+                        org.hamcrest.Matchers.allOf(
+                            androidx.test.espresso.intent.matcher.IntentMatchers.hasAction(android.content.Intent.ACTION_SEND),
+                            androidx.test.espresso.intent.matcher.IntentMatchers.hasType("text/plain"),
+                            androidx.test.espresso.intent.matcher.IntentMatchers.hasExtra(
+                                org.hamcrest.Matchers.equalTo(android.content.Intent.EXTRA_TEXT),
+                                org.hamcrest.Matchers.allOf(
+                                    org.hamcrest.Matchers.containsString("Chi Forest Machine 01"),
+                                    org.hamcrest.Matchers.containsString("chiforest://node/N01"),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            )
+        } finally {
+            androidx.test.espresso.intent.Intents.release()
+        }
+    }
+
+    /** The demo build: login page + Feature 1 (supplier) + Feature 2 (student restock radar); the rest is hidden. */
+    @Test fun demo_scope_shows_login_and_two_features_only() {
+        assumeTrue("demo scope only", !BuildConfig.FEATURE_VIP_CLUB && !BuildConfig.FEATURE_CAMPUS_MAP)
+        agreeAndLogin(supplier = false)
+        see("DRINKS IN THIS MACHINE")
+        // student navigation: Inventory + Notifications only
+        rule.onAllNodes(hasContentDescription("Inventory", substring = true).and(androidx.compose.ui.test.hasClickAction())).assertCountEquals(1)
+        rule.onAllNodes(hasContentDescription("Notifications", substring = true).and(androidx.compose.ui.test.hasClickAction())).assertCountEquals(1)
+        rule.onAllNodes(hasContentDescription("VIP Pass")).assertCountEquals(0)
+        rule.onAllNodes(hasContentDescription("Campus Map")).assertCountEquals(0)
+        // no map, escrow or VIP controls on the inventory
+        gone("Route"); gone("I'm Here"); gone("Hold"); gone("Navigate"); gone("Other Nodes"); gone("1 can on hold for you")
+        // Feature 2: Notify Me works
+        tap("Notify Me")
+        see("Subscribed")
+        nav("Notifications")
+        see("Restock & Drops")
+        see("URGENT DROP ALERT")
+        see("Osmanthus Plum Sparkling")
+        gone("Holds & drops"); gone("VIP perks"); gone("HOLD ENDED"); gone("CAMPUS PASS PERKS"); gone("Navigate & Hold")
+        tap("Unsubscribe")
+        tap("Mark All Read")
+        see("All caught up")
+        // Feature 1: the supplier still has all three tabs
+        tap("Profile")
+        tap("Sign out")
+        tap("补货供货商 Supplier")
+        tap("我已阅读", substring = true)
+        tap("微信登录 · Supplier WeChat")
+        skipGuide()
+        see("Stock by slot")
+        nav("Dispatch")
+        see("Restock for Machine 01")
+        nav("Alerts")
+        see("Alerts to your phone")
     }
 }

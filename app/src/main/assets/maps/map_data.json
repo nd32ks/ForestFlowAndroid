@@ -7,7 +7,7 @@
    "name": "Taicang",
    "nameZh": "太仓",
    "subtitle": "XJTLU Taicang",
-   "image": "maps/tc_campus.png",
+   "image": "maps/tc_campus.webp",
    "northBearingDeg": 35,
    "initialCenter": [
     0.668,
@@ -230,10 +230,10 @@
     {
      "id": "N01",
      "num": "01",
-     "name": "Chi Forest Smart Node 01",
-     "label": "Bldg G Atrium",
+     "name": "Chi Forest Machine 01",
+     "label": "Building G Atrium · 1F",
      "building": "G",
-     "location": "Bldg G Ground Floor Atrium",
+     "location": "Building G · Atrium, 1F",
      "status": "online",
      "pct": 82,
      "tempC": 3.8,
@@ -246,17 +246,25 @@
      "ready": {
       "White Peach": 6,
       "Lychee": 1,
-      "Calamansi": 8
+      "Calamansi": 8,
+      "Grape": 5,
+      "Green Tea": 7,
+      "Electro": 4,
+      "Osmanthus": 0,
+      "Mango": 4,
+      "Monster": 6,
+      "Red Bull": 3,
+      "Ice Tea": 2
      },
      "demo": true
     },
     {
      "id": "N02",
      "num": "02",
-     "name": "Chi Forest Smart Node 02",
-     "label": "AI Lab 2F",
+     "name": "Chi Forest Machine 02",
+     "label": "AI Lab · 2F",
      "building": "D",
-     "location": "Bldg D · AI Lab 2F",
+     "location": "Building D · AI Lab, 2F",
      "status": "online",
      "pct": 91,
      "tempC": 3.5,
@@ -270,17 +278,24 @@
       "White Peach": 9,
       "Lychee": 7,
       "Calamansi": 5,
-      "Osmanthus": 3
+      "Osmanthus": 3,
+      "Grape": 3,
+      "Green Tea": 2,
+      "Electro": 8,
+      "Mango": 7,
+      "Monster": 0,
+      "Red Bull": 5,
+      "Ice Tea": 6
      },
      "demo": true
     },
     {
      "id": "N03",
      "num": "03",
-     "name": "Chi Forest Smart Node 03",
-     "label": "Library 1F Hub",
+     "name": "Chi Forest Machine 03",
+     "label": "Library Hub · 1F",
      "building": "D",
-     "location": "Bldg D · Library 1F Hub",
+     "location": "Building D · Library hub, 1F",
      "status": "low",
      "pct": 38,
      "tempC": 4.6,
@@ -293,17 +308,25 @@
      "ready": {
       "White Peach": 3,
       "Lychee": 0,
-      "Calamansi": 2
+      "Calamansi": 2,
+      "Grape": 0,
+      "Green Tea": 5,
+      "Electro": 2,
+      "Osmanthus": 0,
+      "Mango": 2,
+      "Monster": 4,
+      "Red Bull": 0,
+      "Ice Tea": 3
      },
      "demo": true
     },
     {
      "id": "N04",
      "num": "04",
-     "name": "Chi Forest Smart Node 04",
-     "label": "Bldg F Restaurant",
+     "name": "Chi Forest Machine 04",
+     "label": "Building F Restaurant · 2F",
      "building": "F",
-     "location": "Bldg F · Western Restaurant",
+     "location": "Building F · Western Restaurant, 2F",
      "status": "online",
      "pct": 64,
      "tempC": 3.9,
@@ -316,17 +339,25 @@
      "ready": {
       "White Peach": 4,
       "Lychee": 5,
-      "Calamansi": 6
+      "Calamansi": 6,
+      "Grape": 6,
+      "Green Tea": 0,
+      "Electro": 5,
+      "Osmanthus": 0,
+      "Mango": 5,
+      "Monster": 3,
+      "Red Bull": 4,
+      "Ice Tea": 0
      },
      "demo": true
     },
     {
      "id": "N05",
      "num": "05",
-     "name": "Chi Forest Smart Node 05",
-     "label": "Bldg A Dining",
+     "name": "Chi Forest Machine 05",
+     "label": "Building A Dining · 1F",
      "building": "A",
-     "location": "Bldg A · Dining Hall",
+     "location": "Building A · Dining Hall, 1F",
      "status": "online",
      "pct": 76,
      "tempC": 3.6,
@@ -340,17 +371,24 @@
       "White Peach": 7,
       "Lychee": 4,
       "Calamansi": 9,
-      "Osmanthus": 2
+      "Osmanthus": 2,
+      "Grape": 2,
+      "Green Tea": 4,
+      "Electro": 6,
+      "Mango": 6,
+      "Monster": 5,
+      "Red Bull": 2,
+      "Ice Tea": 4
      },
      "demo": true
     },
     {
      "id": "N06",
      "num": "06",
-     "name": "Chi Forest Smart Node 06",
-     "label": "Scholar Space",
+     "name": "Chi Forest Machine 06",
+     "label": "Scholar Space · 3F",
      "building": "B",
-     "location": "Bldg B · Scholar Space",
+     "location": "Building B · Scholar Space, 3F",
      "status": "low",
      "pct": 22,
      "tempC": 4.2,
@@ -363,7 +401,15 @@
      "ready": {
       "White Peach": 1,
       "Lychee": 2,
-      "Calamansi": 0
+      "Calamansi": 0,
+      "Grape": 1,
+      "Green Tea": 3,
+      "Electro": 0,
+      "Osmanthus": 0,
+      "Mango": 0,
+      "Monster": 2,
+      "Red Bull": 1,
+      "Ice Tea": 3
      },
      "demo": true
     }
@@ -374,7 +420,7 @@
    "name": "SIP",
    "nameZh": "园区",
    "subtitle": "XJTLU SIP · Suzhou",
-   "image": "maps/sip_campus.png",
+   "image": "maps/sip_campus.webp",
    "northBearingDeg": 0,
    "initialCenter": [
     0.45,
@@ -634,10 +680,10 @@
     {
      "id": "N07",
      "num": "07",
-     "name": "Chi Forest Smart Node 07",
-     "label": "CB Ground Floor",
+     "name": "Chi Forest Machine 07",
+     "label": "CB Lobby · 1F",
      "building": "CB",
-     "location": "Central Building · Ground Floor",
+     "location": "Central Building · Lobby, 1F",
      "status": "online",
      "pct": 88,
      "tempC": 3.4,
@@ -651,17 +697,24 @@
       "White Peach": 8,
       "Lychee": 6,
       "Calamansi": 7,
-      "Osmanthus": 4
+      "Osmanthus": 4,
+      "Grape": 4,
+      "Green Tea": 6,
+      "Electro": 3,
+      "Mango": 3,
+      "Monster": 7,
+      "Red Bull": 6,
+      "Ice Tea": 5
      },
      "demo": true
     },
     {
      "id": "N08",
      "num": "08",
-     "name": "Chi Forest Smart Node 08",
-     "label": "SA Lobby",
+     "name": "Chi Forest Machine 08",
+     "label": "SA Lobby · 2F",
      "building": "SA",
-     "location": "Science Building A · Lobby",
+     "location": "Science Building A · Lobby, 2F",
      "status": "online",
      "pct": 57,
      "tempC": 3.9,
@@ -674,17 +727,25 @@
      "ready": {
       "White Peach": 5,
       "Lychee": 2,
-      "Calamansi": 4
+      "Calamansi": 4,
+      "Grape": 7,
+      "Green Tea": 1,
+      "Electro": 4,
+      "Osmanthus": 0,
+      "Mango": 4,
+      "Monster": 1,
+      "Red Bull": 3,
+      "Ice Tea": 2
      },
      "demo": true
     },
     {
      "id": "N09",
      "num": "09",
-     "name": "Chi Forest Smart Node 09",
-     "label": "FB Atrium",
+     "name": "Chi Forest Machine 09",
+     "label": "FB Atrium · 1F",
      "building": "FB",
-     "location": "Foundation Building · Atrium",
+     "location": "Foundation Building · Atrium, 1F",
      "status": "online",
      "pct": 73,
      "tempC": 4.1,
@@ -697,17 +758,25 @@
      "ready": {
       "White Peach": 6,
       "Lychee": 3,
-      "Calamansi": 5
+      "Calamansi": 5,
+      "Grape": 2,
+      "Green Tea": 5,
+      "Electro": 0,
+      "Osmanthus": 0,
+      "Mango": 5,
+      "Monster": 3,
+      "Red Bull": 0,
+      "Ice Tea": 6
      },
      "demo": true
     },
     {
      "id": "N10",
      "num": "10",
-     "name": "Chi Forest Smart Node 10",
-     "label": "IBSS Café",
+     "name": "Chi Forest Machine 10",
+     "label": "IBSS Café · 1F",
      "building": "BS",
-     "location": "IBSS · Level 1 Café",
+     "location": "IBSS · Café, 1F",
      "status": "online",
      "pct": 69,
      "tempC": 3.7,
@@ -721,17 +790,24 @@
       "White Peach": 5,
       "Lychee": 4,
       "Calamansi": 3,
-      "Osmanthus": 1
+      "Osmanthus": 1,
+      "Grape": 5,
+      "Green Tea": 3,
+      "Electro": 6,
+      "Mango": 2,
+      "Monster": 4,
+      "Red Bull": 5,
+      "Ice Tea": 1
      },
      "demo": true
     },
     {
      "id": "N11",
      "num": "11",
-     "name": "Chi Forest Smart Node 11",
-     "label": "Design Studio",
+     "name": "Chi Forest Machine 11",
+     "label": "Design Studio · 3F",
      "building": "DB",
-     "location": "Design Building · Studio Wing",
+     "location": "Design Building · Studio Wing, 3F",
      "status": "low",
      "pct": 31,
      "tempC": 4.4,
@@ -744,7 +820,15 @@
      "ready": {
       "White Peach": 2,
       "Lychee": 1,
-      "Calamansi": 0
+      "Calamansi": 0,
+      "Grape": 0,
+      "Green Tea": 1,
+      "Electro": 3,
+      "Osmanthus": 0,
+      "Mango": 1,
+      "Monster": 0,
+      "Red Bull": 2,
+      "Ice Tea": 3
      },
      "demo": true
     }

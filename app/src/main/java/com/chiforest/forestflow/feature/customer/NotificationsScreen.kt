@@ -38,7 +38,9 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chiforest.forestflow.core.Action
+import com.chiforest.forestflow.core.RestockEta
 import com.chiforest.forestflow.core.AppState
+import com.chiforest.forestflow.core.Features
 import com.chiforest.forestflow.feature.ScreenColumn
 import com.chiforest.forestflow.ui.components.BtnStyle
 import com.chiforest.forestflow.ui.components.Chip
@@ -61,8 +63,10 @@ import com.chiforest.forestflow.ui.theme.Type
 fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
     val c = FF.c
     val cu = s.customer
-    val nf = cu.nf
-    val unread = s.unread
+    val vip = Features.vipClub
+    // a filter saved while the VIP club was on may no longer exist
+    val nf = if (!vip && cu.nf in listOf("escrow", "vip")) "all" else cu.nf
+    val unread = s.unread(vip)
     val slide = with(LocalDensity.current) { 40.dp.roundToPx() }
     val exit = slideOutHorizontally { slide } + fadeOut() + shrinkVertically()
     ScreenColumn {
@@ -72,9 +76,13 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Chip(if (unread > 0) "All · $unread" else "All", nf == "all", { dispatch(Action.Nf("all")) })
             Chip("Restocks", nf == "restocks", { dispatch(Action.Nf("restocks")) }, icon = Ic.Box)
-            Chip("Escrow & Drops", nf == "escrow", { dispatch(Action.Nf("escrow")) }, icon = Ic.Lock)
-            Chip("VIP Privileges", nf == "vip", { dispatch(Action.Nf("vip")) }, icon = Ic.Star)
+            if (vip) {
+                Chip("Holds & drops", nf == "escrow", { dispatch(Action.Nf("escrow")) }, icon = Ic.Lock)
+                Chip("VIP perks", nf == "vip", { dispatch(Action.Nf("vip")) }, icon = Ic.Star)
+            }
         }
+
+        DropAlertsBar(cu.dropAlerts) { dispatch(Action.DropAlerts) }
 
         // ---------------- watchlist
         if (nf == "all" || nf == "restocks") {
@@ -83,12 +91,12 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
                 Eyebrow("Active Restock Watchlist") {
                     Pill("$active Active", c.ink, c.surface)
                     Spacer(Modifier.width(6.dp))
-                    Pill("Node-Sync Live", c.green, c.greenTint, dot = true, pulse = true)
+                    Pill("Updates live", c.green, c.greenTint)
                 }
                 AnimatedVisibility(cu.osmanthusWatch, enter = expandVertically() + fadeIn(), exit = exit) {
                     WatchCard(
-                        "osmanthus", "Osmanthus Plum Sparkling", "Node 01 — Building G Atrium",
-                        "Target Coil #04: Restocking Today 14:30", c.amber, c.amberTint,
+                        "osmanthus", "Osmanthus Plum Sparkling", "Machine 01 · Building G Atrium · 1F",
+                        RestockEta.forNode("N01", s.supplier)?.label ?: "Slot 4 is being restocked today at 14:30", c.amber, c.amberTint,
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             ForestButton("Check Live Status", { dispatch(Action.LiveStatus) }, Modifier.weight(1f), small = true, style = BtnStyle.Dark, icon = Ic.Activity)
@@ -98,8 +106,8 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
                 }
                 AnimatedVisibility(cu.peachWatch, enter = expandVertically() + fadeIn(), exit = exit) {
                     WatchCard(
-                        "white peach", "White Peach Sub-Chilled Restock", "Node 03 — Library 1F Hub",
-                        "Coil #02 · 0 Sugar · Chilled", c.blue, c.blueTint,
+                        "white peach", "White Peach back in stock", "Machine 03 · Library Hub · 1F",
+                        "Slot 2 · 0 sugar · chilled", c.blue, c.blueTint,
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("Push App Alert", style = Type.body(12.sp, 600), color = c.ink)
@@ -112,15 +120,15 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
                     }
                 }
                 if (active == 0) {
-                    EmptyState(Ic.BellOff, "No restock alerts yet", "Tap Notify Me on an out-of-stock coil to join the FIFO queue.", "Browse Inventory") { dispatch(Action.Tab(0)) }
+                    EmptyState(Ic.BellOff, "No restock alerts yet", "Tap Notify Me on a sold-out drink. You get a ping when it is back, first come first served.", "Browse Inventory") { dispatch(Action.Tab(0)) }
                 }
             }
         }
 
         // ---------------- live feed
         val showUrgent = (nf == "all" || nf == "escrow") && "urgent" !in cu.dismissed
-        val showTimeout = (nf == "all" || nf == "escrow") && "timeout" !in cu.dismissed
-        val showPerks = (nf == "all" || nf == "vip") && "perks" !in cu.dismissed
+        val showTimeout = vip && (nf == "all" || nf == "escrow") && "timeout" !in cu.dismissed
+        val showPerks = vip && (nf == "all" || nf == "vip") && "perks" !in cu.dismissed
         if (nf != "restocks") {
             Eyebrow("Live Campus Activity") { Text("Past 2 hours", style = Type.body(11.sp, 600), color = c.faint) }
         }
@@ -132,25 +140,29 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
             ) {
                 Text(
                     buildAnnotatedString {
-                        append("Node 02 (AI Lab 2F) just filled with fresh batch. ")
-                        withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = c.red)) { append("9 cans remaining") }
-                        append(" in rapid dispenser.")
+                        append("Machine 02 (AI Lab, 2F) was just refilled. ")
+                        withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = c.red)) { append("9 cans left") }
+                        append(".")
                     },
                     style = Type.body(13.sp), color = c.muted,
                 )
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ForestButton("Navigate & Hold", { dispatch(Action.HoldNav(System.currentTimeMillis())) }, Modifier.weight(1f), small = true, icon = Ic.Navigation)
-                    ForestButton("Dismiss", { dispatch(Action.Dismiss("urgent")) }, small = true, style = BtnStyle.Outline)
+                    if (vip && Features.campusMap) {
+                        ForestButton("Navigate & Hold", { dispatch(Action.HoldNav(System.currentTimeMillis())) }, Modifier.weight(1f), small = true, icon = Ic.Navigation)
+                        ForestButton("Dismiss", { dispatch(Action.Dismiss("urgent")) }, small = true, style = BtnStyle.Outline)
+                    } else {
+                        ForestButton("Dismiss", { dispatch(Action.Dismiss("urgent")) }, Modifier.weight(1f), small = true, style = BtnStyle.Outline)
+                    }
                 }
             }
         }
         AnimatedVisibility(showTimeout, exit = exit) {
             FeedCard(
-                unread = "timeout" !in cu.read, tag = "ESCROW TIMEOUT", tagColor = c.amber, tagBg = c.amberTint, ago = "28m ago",
-                icon = Ic.Clock, title = "Coil #03 Escrow released",
+                unread = "timeout" !in cu.read, tag = "HOLD ENDED", tagColor = c.amber, tagBg = c.amberTint, ago = "28m ago",
+                icon = Ic.Clock, title = "Your hold on slot 3 ended",
             ) {
-                Text("Coil #03 Escrow released (expired 5-min pickup window). Tap below to instantly re-order.", style = Type.body(13.sp), color = c.muted)
+                Text("Your hold on slot 3 ended because the 5-minute pickup time ran out. Tap below to hold it again.", style = Type.body(13.sp), color = c.muted)
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ForestButton("Re-order Now", { dispatch(Action.Reorder(System.currentTimeMillis())) }, Modifier.weight(1f), small = true, style = BtnStyle.Dark, icon = Ic.Refresh)
@@ -172,7 +184,7 @@ fun NotificationsScreen(s: AppState, dispatch: (Action) -> Unit) {
             }
         }
         if (nf != "restocks" && !showUrgent && !showTimeout && !showPerks) {
-            EmptyState(Ic.CheckCircle, "You're all caught up", "New drops and escrow updates will land here.")
+            EmptyState(Ic.CheckCircle, "You're all caught up", "Tap Notify Me on a sold-out drink, or turn on Get drop alerts, and the updates land here.")
         }
 
         // ---------------- preferences

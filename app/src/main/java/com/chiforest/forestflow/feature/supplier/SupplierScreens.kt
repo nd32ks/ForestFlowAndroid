@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chiforest.forestflow.R
 import com.chiforest.forestflow.core.Action
+import com.chiforest.forestflow.core.Clearance
 import com.chiforest.forestflow.core.AppState
 import com.chiforest.forestflow.core.Coil
 import com.chiforest.forestflow.core.FeedEvent
@@ -86,11 +87,28 @@ import com.chiforest.forestflow.ui.theme.Type
 // ===================================================================== Telemetry
 
 @Composable
-fun TelemetryScreen(s: AppState, clock: () -> String, dispatch: (Action) -> Unit) {
+fun TelemetryScreen(s: AppState, map: com.chiforest.forestflow.core.MapData, clock: () -> String, dispatch: (Action) -> Unit) {
     val c = FF.c
     val sp = s.supplier
+    val mine = map.node("N01")
     ScreenColumn {
-        PageTitle("Node 01 Admin · Taicang", "Telemetry")
+        PageTitle(mine?.shortName ?: "Machine 01", "Telemetry")
+
+        // Which machine this page is about, and how to see the others (user testing: "Node 01" and switching campus were unclear)
+        ForestCard(Modifier.fillMaxWidth(), radius = 22.dp) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Ic.MapPin, null, tint = c.red, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(mine?.location ?: "Building G · Atrium, 1F", style = Type.title(15.sp, 800), color = c.ink)
+                    Text("${map.campusOfNode("N01")?.name ?: "Taicang"} campus · the machine you look after", style = Type.body(12.sp), color = c.muted)
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Text("This page shows only this machine. To check machines on the other campus (Taicang or SIP), open the Stock tab and pick the campus at the top.", style = Type.body(12.sp), color = c.muted)
+            Spacer(Modifier.height(10.dp))
+            ForestButton("See all machines, Taicang and SIP", { dispatch(Action.Tab(3)) }, Modifier.fillMaxWidth(), small = true, style = BtnStyle.Outline, icon = Ic.Box)
+        }
 
         Row(
             Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Brush.horizontalGradient(listOf(c.blueTint, c.amberTint)))
@@ -100,34 +118,33 @@ fun TelemetryScreen(s: AppState, clock: () -> String, dispatch: (Action) -> Unit
             Icon(Ic.Sun, null, tint = c.amber, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
-                Text("28°C · Sunny · Taicang", style = Type.title(14.sp, 700), color = c.ink)
-                Text("Hall G dismissal incoming", style = Type.body(12.sp), color = c.muted)
+                Text("Rush expected at 13:50", style = Type.title(14.sp, 700), color = c.ink)
+                Text("Lectures in Hall G end then, and it’s 28°C outside, so cold drinks will sell fast.", style = Type.body(12.sp), color = c.muted)
             }
-            Pill("Active Sync", c.green, c.surface, dot = true, pulse = true)
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatTile("Dispensed", "${sp.dispensed}", Modifier.weight(1f), sub = "+14% vs Tue", subColor = c.green, icon = Ic.Vending)
+            StatTile("Sold today", "${sp.dispensed}", Modifier.weight(1f), sub = "cans", subColor = c.muted, icon = Ic.Vending)
             StatTile(
-                "Fill", "${sp.networkFill}%", Modifier.weight(1f),
-                sub = if (sp.networkFill < 50) "Low Stock" else "Healthy", subColor = if (sp.networkFill < 50) c.amber else c.green, icon = Ic.Drop,
+                "Stock", "${sp.networkFill}%", Modifier.weight(1f),
+                sub = if (sp.networkFill < 50) "Restock soon" else "Enough stock", subColor = if (sp.networkFill < 50) c.amber else c.green, icon = Ic.Drop,
                 accent = if (sp.networkFill < 50) c.amber else c.ink,
             )
-            StatTile("Next Surge", "13:50", Modifier.weight(1f), sub = "Hall G End", subColor = c.red, icon = Ic.Bolt)
+            StatTile("Next rush", "13:50", Modifier.weight(1f), sub = "Hall G lets out", subColor = c.red, icon = Ic.Bolt)
         }
 
         // coil matrix
         ForestCard(Modifier.fillMaxWidth(), radius = 26.dp) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Coil Tray Matrix", style = Type.title(17.sp, 800), color = c.ink)
-                    Text("Node 01 · 16 coils · 15 cans each", style = Type.body(12.sp), color = c.faint)
+                    Text("Stock by slot", style = Type.title(17.sp, 800), color = c.ink)
+                    Text("16 slots, 15 cans each. Tap a slot to see it or restock it.", style = Type.body(12.sp), color = c.faint)
                 }
                 Legend(c.red2, "Empty")
                 Spacer(Modifier.width(8.dp))
                 Legend(c.amber, "Low")
                 Spacer(Modifier.width(8.dp))
-                Legend(c.green, "Optimal")
+                Legend(c.green, "OK")
             }
             Spacer(Modifier.height(14.dp))
             sp.coils.chunked(4).forEach { row ->
@@ -145,17 +162,17 @@ fun TelemetryScreen(s: AppState, clock: () -> String, dispatch: (Action) -> Unit
                 ) {
                     Column(Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("${sel.id} · ${sel.name}", style = Type.title(15.sp, 800), color = c.ink)
+                            Text("Slot ${sel.id} · ${sel.name}", style = Type.title(15.sp, 800), color = c.ink)
                             Spacer(Modifier.width(6.dp))
                             when (sel.state) {
-                                "empty" -> Pill("EMPTY", c.red, c.redTint)
-                                "low" -> Pill("LOW", c.amber, c.amberTint)
-                                else -> Pill("OPTIMAL", c.green, c.greenTint)
+                                "empty" -> Pill("Empty", c.red, c.redTint)
+                                "low" -> Pill("Low", c.amber, c.amberTint)
+                                else -> Pill("OK", c.green, c.greenTint)
                             }
                         }
                         Text(
-                            if (sel.state == "empty") "0 cans left · ${sp.queue} queued · Depleted at 13:41"
-                            else "${sel.level}/15 cans · ${sel.level * 100 / 15}% fill",
+                            if (sel.state == "empty") "0 cans left · ran out at 13:41 · ${sp.queue} students waiting"
+                            else "${sel.level} of 15 cans left",
                             style = Type.body(12.sp), color = c.faint,
                         )
                     }
@@ -174,29 +191,28 @@ fun TelemetryScreen(s: AppState, clock: () -> String, dispatch: (Action) -> Unit
                     Icon(Ic.Sparkles, null, tint = Color.White, modifier = Modifier.size(18.dp))
                 }
                 Spacer(Modifier.width(10.dp))
-                Text("AI Predictive Restock Engine", style = Type.title(15.sp, 800), color = c.ink, modifier = Modifier.weight(1f))
-                Pill("Live ML", c.blue, c.blueTint, dot = true, pulse = true)
+                Text("Restock forecast", style = Type.title(15.sp, 800), color = c.ink, modifier = Modifier.weight(1f))
             }
             Spacer(Modifier.height(12.dp))
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.redTint).padding(14.dp)) {
                 Text("White Peach Sparkling Water", style = Type.title(15.sp, 800), color = c.ink)
                 Text(
-                    if (sp.surges > 0) "stockout predicted 13:51 (surge ×${sp.surges}, +450 students, outdoor load)" else "stockout predicted 13:55 (+450 students, outdoor load)",
+                    if (sp.surges > 0) "Likely to run out at 13:51, earlier because of the rush" else "Likely to run out at 13:55, when 450 students leave Hall G",
                     style = Type.body(13.sp, 600), color = c.red,
                 )
-                Text("Telemetry timestamp ${clock()} · temperature delta +2.4°C", style = Type.mono(11.sp, 500), color = c.faint)
+                Text("Forecast updated ${clock()}", style = Type.body(11.sp, 500), color = c.faint)
             }
             Spacer(Modifier.height(12.dp))
             Hairline()
             Spacer(Modifier.height(12.dp))
-            Text("RECOMMENDED DISPATCH", style = Type.eyebrow(10.sp), color = c.faint)
-            Text("3 cases White Peach · 2 cases Lychee Fizzy", style = Type.title(15.sp, 700), color = c.ink)
+            Text("Suggested: send the runner with", style = Type.body(12.sp, 600), color = c.faint)
+            Text("3 cases White Peach and 2 cases Lychee Fizzy", style = Type.title(15.sp, 700), color = c.ink)
             Spacer(Modifier.height(12.dp))
             ForestButton(
                 when {
                     sp.stage >= 4 -> "Restocked"
-                    sp.stage >= 3 -> "Runner En Route · Open Dispatch"
-                    else -> "Dispatch Runner"
+                    sp.stage >= 3 -> "Runner on the way · see Dispatch"
+                    else -> "Send runner"
                 },
                 { if (sp.stage >= 3) dispatch(Action.Tab(1)) else dispatch(Action.AiDispatch(clock())) },
                 Modifier.fillMaxWidth(), style = BtnStyle.Dark, icon = Ic.Truck, enabled = sp.stage < 4,
@@ -205,15 +221,15 @@ fun TelemetryScreen(s: AppState, clock: () -> String, dispatch: (Action) -> Unit
 
         // velocity chart
         ForestCard(Modifier.fillMaxWidth(), radius = 26.dp) {
-            Text("Dispense Velocity", style = Type.title(17.sp, 800), color = c.ink)
-            Text("Cans per hour with upcoming surge forecast", style = Type.body(12.sp), color = c.faint)
+            Text("Cans sold per hour", style = Type.title(17.sp, 800), color = c.ink)
+            Text("Tap a bar to see that hour. 14:00 is the expected rush.", style = Type.body(12.sp), color = c.faint)
             Spacer(Modifier.height(14.dp))
             BarChart(Seed.velocity, sp.velocitySel, { dispatch(Action.Velocity(it)) }, valueSuffix = " cans")
             Spacer(Modifier.height(10.dp))
             val (label, v) = Seed.velocity[sp.velocitySel]
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(if (label == "14:00") "14:00 (Peak Surge 13:50)" else "$label window", style = Type.body(13.sp, 600), color = c.ink, modifier = Modifier.weight(1f))
-                Pill(if (label == "14:00") "$v PEAK" else "$v cans", if (label == "14:00") c.red else c.ink, if (label == "14:00") c.redTint else c.surface2, mono = true)
+                Text(if (label == "14:00") "14:00 · expected rush" else "Around $label", style = Type.body(13.sp, 600), color = c.ink, modifier = Modifier.weight(1f))
+                Pill(if (label == "14:00") "$v cans, peak" else "$v cans", if (label == "14:00") c.red else c.ink, if (label == "14:00") c.redTint else c.surface2, mono = true)
             }
         }
     }
@@ -268,41 +284,41 @@ fun DispatchScreen(s: AppState, clock: () -> String, dispatch: (Action) -> Unit)
     val c = FF.c
     val sp = s.supplier
     ScreenColumn {
-        PageTitle("Logistics Console", "Dispatch")
+        PageTitle("Restock run", "Dispatch")
 
         Row(
             Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(Brush.linearGradient(listOf(c.navy2, c.navy))).padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
-                Text("Node 01 Restock Routine", style = Type.title(16.sp, 800), color = Color.White)
-                Text("Batch #88 · ${sp.networkFill}% Remaining Capacity", style = Type.body(12.sp), color = Color.White.copy(alpha = 0.7f))
+                Text("Restock for Machine 01", style = Type.title(16.sp, 800), color = Color.White)
+                Text("Machine is ${sp.networkFill}% full", style = Type.body(12.sp), color = Color.White.copy(alpha = 0.7f))
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text("${sp.queue}", style = Type.num(26.sp, 800), color = Color.White)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     LiveDot(Color(0xFFFF6A62), size = 6.dp)
                     Spacer(Modifier.width(5.dp))
-                    Text("In Queue", style = Type.body(11.sp, 600), color = Color.White.copy(alpha = 0.7f))
+                    Text("students waiting", style = Type.body(11.sp, 600), color = Color.White.copy(alpha = 0.7f))
                 }
             }
         }
 
         // pipeline
         ForestCard(Modifier.fillMaxWidth(), radius = 26.dp) {
-            Eyebrow("Pipeline Status") { Pill("Live Sync", c.green, c.greenTint, dot = true, pulse = true) }
+            Eyebrow("Progress")
             Spacer(Modifier.height(14.dp))
             val steps = listOf(
-                Triple("Depletion Predicted", "13:21", Ic.Sparkles),
-                Triple("Ticket Dispatched", "13:28", Ic.Activity),
-                Triple("Runner En Route", "ETA 6m", Ic.Truck),
-                Triple("Stock Restocked", "Pending", Ic.CheckCircle),
+                Triple("Run-out forecast", "13:21", Ic.Activity),
+                Triple("Runner sent", "13:28", Ic.Activity),
+                Triple("Runner on the way", "6 min away", Ic.Truck),
+                Triple("Machine restocked", "Not yet", Ic.CheckCircle),
             )
             steps.forEachIndexed { i, (title, time, icon) ->
                 val n = i + 1
                 val done = sp.stage > n || sp.stage == 4
                 val active = sp.stage == n && sp.stage < 4
-                PipelineStep(title, if (active) "$time (Active)" else if (done && n == 4) "Done ${clock()}" else if (done) time else if (n == 4) "Pending" else time, icon, done, active, last = i == steps.lastIndex)
+                PipelineStep(title, if (active) "$time · now" else if (done && n == 4) "Done ${clock()}" else if (done) time else if (n == 4) "Not yet" else time, icon, done, active, last = i == steps.lastIndex)
             }
         }
 
@@ -316,11 +332,11 @@ fun DispatchScreen(s: AppState, clock: () -> String, dispatch: (Action) -> Unit)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Runner: Zhang", style = Type.title(16.sp, 800), color = c.ink)
+                        Text("Runner Zhang", style = Type.title(16.sp, 800), color = c.ink)
                         Spacer(Modifier.width(6.dp))
-                        Pill("Logistics 02", c.blue, c.blueTint)
+                        
                     }
-                    Text("Transport: Smart Cart 04 · 2 Cases Loaded", style = Type.body(12.sp), color = c.faint, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("Carrying 2 cases on cart 04", style = Type.body(12.sp), color = c.faint, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
             Spacer(Modifier.height(12.dp))
@@ -330,13 +346,13 @@ fun DispatchScreen(s: AppState, clock: () -> String, dispatch: (Action) -> Unit)
             ) {
                 Icon(Ic.Route, null, tint = if (sp.stage >= 3) c.green else c.muted, modifier = Modifier.size(17.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("East Corridor Quad → Node 01", style = Type.body(13.sp, 600), color = c.ink, modifier = Modifier.weight(1f))
+                Text("From East Corridor Quad to Machine 01", style = Type.body(13.sp, 600), color = c.ink, modifier = Modifier.weight(1f))
                 Text(if (sp.stage >= 4) "Arrived" else "ETA 6 min", style = Type.mono(12.sp, 700), color = if (sp.stage >= 3) c.green else c.muted)
             }
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 ForestButton(
-                    if (sp.runnerPinged || sp.stage >= 3) "Pinged · En Route" else "Ping", { dispatch(Action.PingRunner) },
+                    if (sp.runnerPinged || sp.stage >= 3) "On the way" else "Ping", { dispatch(Action.PingRunner) },
                     Modifier.weight(1f), style = if (sp.runnerPinged || sp.stage >= 3) BtnStyle.Green else BtnStyle.Dark,
                     icon = if (sp.runnerPinged || sp.stage >= 3) Ic.Check else Ic.Ping, enabled = sp.stage < 4,
                 )
@@ -348,58 +364,65 @@ fun DispatchScreen(s: AppState, clock: () -> String, dispatch: (Action) -> Unit)
         ForestCard(Modifier.fillMaxWidth(), radius = 26.dp) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Restock Manifest", style = Type.title(17.sp, 800), color = c.ink)
-                    Text("Node 01 Batch #88 · ${sp.dispensed} Cans Dispensed", style = Type.body(12.sp), color = c.faint)
+                    Text("What to load", style = Type.title(17.sp, 800), color = c.ink)
+                    Text("${sp.dispensed} cans sold today at Machine 01", style = Type.body(12.sp), color = c.faint)
                 }
-                Pill("6 Cases Total", c.ink, c.surface2)
+                Pill("6 cases", c.ink, c.surface2)
             }
             Spacer(Modifier.height(8.dp))
-            ManifestRow("White Peach", "White Peach · A1", "Coil A1 · 3 Cases (72 cans)", "HIGH", c.red, c.redTint, "Critical ${pct(sp.coil("A1"))}%")
+            ManifestRow("White Peach", "White Peach · A1", "Slot A1 · 3 cases (72 cans)", sp.coil("A1"))
             Hairline()
-            ManifestRow("Lychee", "Lychee Fizzy · B2", "Coil B2 · 2 Cases (48 cans)", "MEDIUM", c.amber, c.amberTint, "Low ${pct(sp.coil("B2"))}%")
+            ManifestRow("Lychee", "Lychee Fizzy · B2", "Slot B2 · 2 cases (48 cans)", sp.coil("B2"))
             Hairline()
-            ManifestRow("Green Tea", "Green Tea Zero Sugar · C4", "Coil C4 · 1 Case (24 cans)", "LOW", c.green, c.greenTint, "Steady ${pct(sp.coil("C4"))}%")
+            ManifestRow("Green Tea", "Green Tea Zero Sugar · C4", "Slot C4 · 1 case (24 cans)", sp.coil("C4"))
         }
 
-        // dynamic clearance
-        AnimatedVisibility(sp.clearance != "dismissed", enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
-            if (sp.clearance == "approved") {
-                Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(c.greenTint).border(1.dp, c.green.copy(alpha = 0.3f), RoundedCornerShape(22.dp)).padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Ic.CheckCircle, null, tint = c.green, modifier = Modifier.size(24.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Text("Price cut live · ¥4.40", style = Type.title(15.sp, 800), color = c.green)
-                        Text("E-Ink shelf tags updated on Coil C3 (was ¥5.50)", style = Type.body(12.sp), color = c.muted)
-                    }
+        // dynamic clearance: live markdowns, then the next suggestion (slowest seller over the threshold)
+        Clearance.live(sp).forEach { l ->
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(c.greenTint).border(1.dp, c.green.copy(alpha = 0.3f), RoundedCornerShape(22.dp)).padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Ic.CheckCircle, null, tint = c.green, modifier = Modifier.size(24.dp))
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Price cut live · ${l.name} ${Clearance.yuan(l.price)}", style = Type.title(15.sp, 800), color = c.green)
+                    Text("List ${Clearance.yuan(Clearance.LIST_PRICE)} · ${l.stock} cans · ${Clearance.hoursLabel(l.hours)}", style = Type.body(12.sp), color = c.muted)
                 }
-            } else {
+                ForestButton("End", { dispatch(Action.EndClearance(l.name, clock())) }, small = true, style = BtnStyle.Outline)
+            }
+        }
+        val cand = Clearance.candidate(sp)
+        AnimatedVisibility(cand != null, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+            if (cand != null) {
+                val to = Clearance.salePrice(cand.price)
                 ForestCard(Modifier.fillMaxWidth().border(1.5.dp, c.amber.copy(alpha = 0.35f), RoundedCornerShape(26.dp)), radius = 26.dp) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Ic.Tag, null, tint = c.amber, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("DYNAMIC CLEARANCE TRIGGERED", style = Type.eyebrow(10.sp), color = c.amber, modifier = Modifier.weight(1f))
-                        Pill("Coil C3", c.ink, c.surface2)
+                        Text("Suggested price cut", style = Type.body(12.sp, 700), color = c.amber, modifier = Modifier.weight(1f))
+                        Pill("Slot ${cand.coils.joinToString(", ")}", c.ink, c.surface2)
                     }
                     Spacer(Modifier.height(10.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        ProductArt("Osmanthus", Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)))
+                        ProductArt(cand.name, Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)))
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("Osmanthus Plum Sparkling", style = Type.title(15.sp, 800), color = c.ink)
+                            Text(cand.name, style = Type.title(15.sp, 800), color = c.ink)
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("¥5.50", style = Type.num(13.sp, 600).copy(textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough), color = c.faint)
+                                Text(Clearance.yuan(cand.price), style = Type.num(13.sp, 600).copy(textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough), color = c.faint)
                                 Spacer(Modifier.width(6.dp))
-                                Text("¥4.40", style = Type.num(17.sp, 800), color = c.red)
+                                Text(Clearance.yuan(to), style = Type.num(17.sp, 800), color = c.red)
                                 Spacer(Modifier.width(6.dp))
-                                Pill("−20%", c.red, c.redTint)
+                                Pill("−${Clearance.DISCOUNT_PCT}%", c.red, c.redTint)
                             }
                         }
                     }
                     Spacer(Modifier.height(8.dp))
-                    Text("Slow-moving item detected. Automated price markdown suggested to purge remaining coil C3 inventory prior to incoming tea stock.", style = Type.body(12.sp), color = c.muted)
+                    Text(
+                        "This drink sells slowest: ${cand.stock} cans would take ${Clearance.hoursLabel(cand.hours).removeSuffix(" to sell out")} to sell. A cheaper price helps clear it.",
+                        style = Type.body(12.sp), color = c.muted,
+                    )
                     Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         ForestButton("Approve Price Cut", { dispatch(Action.Approve(clock())) }, Modifier.weight(1f), icon = Ic.Check)
@@ -412,25 +435,25 @@ fun DispatchScreen(s: AppState, clock: () -> String, dispatch: (Action) -> Unit)
         // surge simulation
         ForestCard(Modifier.fillMaxWidth(), radius = 26.dp) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("SIMULATION ENGINE · DEMO DAY", style = Type.eyebrow(10.sp), color = c.faint, modifier = Modifier.weight(1f))
-                Pill("Predictive AI", c.blue, c.blueTint, icon = Ic.Sparkles)
+                Text("Demo: try a rush", style = Type.body(12.sp, 700), color = c.faint, modifier = Modifier.weight(1f))
+                
             }
             Spacer(Modifier.height(10.dp))
-            ForestButton("Simulate Foot-Traffic Surge", { dispatch(Action.Surge(clock())) }, Modifier.fillMaxWidth(), style = BtnStyle.Tonal, icon = Ic.Bolt)
+            ForestButton("Simulate a lunch rush", { dispatch(Action.Surge(clock())) }, Modifier.fillMaxWidth(), style = BtnStyle.Tonal, icon = Ic.Bolt)
             Spacer(Modifier.height(6.dp))
-            Text("450 students · Hall G · 13:50 · 28°C", style = Type.mono(11.sp, 500), color = c.faint, modifier = Modifier.align(Alignment.CenterHorizontally))
+            Text("Pretends 450 students just left Hall G at 13:50", style = Type.body(11.sp, 500), color = c.faint, modifier = Modifier.align(Alignment.CenterHorizontally))
         }
 
         Column {
             ForestButton(
-                if (sp.restockConfirmed) "Restock Confirmed" else "Confirm Restock Loaded",
+                if (sp.restockConfirmed) "Restock done" else "Mark restock as done",
                 { dispatch(Action.ConfirmRestock(clock())) }, Modifier.fillMaxWidth().height(58.dp),
                 style = if (sp.restockConfirmed) BtnStyle.Green else BtnStyle.Primary,
                 icon = if (sp.restockConfirmed) Ic.CheckCircle else Ic.Box, enabled = !sp.restockConfirmed,
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                if (sp.restockConfirmed) "Node 01 at 100% capacity · Campus Log 02 notified" else "Resets Node 01 to 100% capacity and notifies Campus Log 02.",
+                if (sp.restockConfirmed) "Machine 01 is full again. Waiting students have been told." else "Tap when the runner has filled the machine. Waiting students get a message.",
                 style = Type.body(12.sp), color = c.faint, modifier = Modifier.align(Alignment.CenterHorizontally),
             )
         }
@@ -438,6 +461,14 @@ fun DispatchScreen(s: AppState, clock: () -> String, dispatch: (Action) -> Unit)
 }
 
 private fun pct(c: Coil?) = ((c?.level ?: 0) * 100) / 15
+
+/** Manifest wording follows the live fill level, so a refilled coil never reads "Critical 100%". */
+internal fun fillLabel(pct: Int) = when {
+    pct >= 100 -> "Full"
+    pct <= 20 -> "Critical"
+    pct <= 50 -> "Low"
+    else -> "Steady"
+}
 
 @Composable
 private fun PipelineStep(title: String, time: String, icon: ImageVector, done: Boolean, active: Boolean, last: Boolean) {
@@ -474,8 +505,16 @@ private fun PipelineStep(title: String, time: String, icon: ImageVector, done: B
 }
 
 @Composable
-private fun ManifestRow(product: String, title: String, sub: String, priority: String, fg: Color, bg: Color, level: String) {
+private fun ManifestRow(product: String, title: String, sub: String, coil: Coil?) {
     val c = FF.c
+    val p = pct(coil)
+    val level = "${fillLabel(p)} $p%"
+    val (priority, fg, bg) = when {
+        p >= 100 -> Triple("LOADED", c.green, c.greenTint)
+        p <= 20 -> Triple("HIGH", c.red, c.redTint)
+        p <= 50 -> Triple("MEDIUM", c.amber, c.amberTint)
+        else -> Triple("LOW", c.green, c.greenTint)
+    }
     Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         ProductArt(product, Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(canColor(product).copy(alpha = 0.12f)))
         Spacer(Modifier.width(12.dp))
@@ -513,7 +552,7 @@ fun AlertsScreen(s: AppState, dispatch: (Action) -> Unit) {
         }
     }
     ScreenColumn {
-        PageTitle("Admin · Alerts & Activity", "Alerts")
+        PageTitle("Alerts", "Alerts")
 
         ForestCard(Modifier.fillMaxWidth(), radius = 24.dp, padding = PaddingValues(start = 16.dp, end = 6.dp, top = 12.dp, bottom = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -523,13 +562,13 @@ fun AlertsScreen(s: AppState, dispatch: (Action) -> Unit) {
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Live Alert Gateway", style = Type.title(15.sp, 800), color = c.ink)
+                        Text("Alerts to your phone", style = Type.title(15.sp, 800), color = c.ink)
                         Spacer(Modifier.width(6.dp))
                         if (!sp.muted) LiveDot(c.green, size = 6.dp)
                     }
-                    Text("Push pipeline latency: 28ms · Node 01 queue auto-managed", style = Type.body(11.sp), color = c.faint)
+                    Text("You get a notification when a slot runs out or a runner arrives.", style = Type.body(11.sp), color = c.faint)
                 }
-                ForestSwitch(!sp.muted, { dispatch(Action.Mute) }, "Alert gateway live")
+                ForestSwitch(!sp.muted, { dispatch(Action.Mute) }, "Phone alerts on")
             }
         }
 
@@ -540,13 +579,13 @@ fun AlertsScreen(s: AppState, dispatch: (Action) -> Unit) {
                     .padding(18.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Pill("URGENT", Color(0xFFB7131A), Color.White, icon = Ic.Alert)
+                    Pill("Needs action", Color(0xFFB7131A), Color.White, icon = Ic.Alert)
                     Spacer(Modifier.weight(1f))
-                    Text("1 empty coil · ${sp.queue} students waiting", style = Type.body(12.sp, 700), color = Color.White.copy(alpha = 0.9f))
+                    Text("1 empty slot · ${sp.queue} students waiting", style = Type.body(12.sp, 700), color = Color.White.copy(alpha = 0.9f))
                 }
                 Spacer(Modifier.height(12.dp))
-                Text("Coil C3 (Osmanthus Plum) depleted.", style = Type.title(18.sp, 800), color = Color.White)
-                Text("FIFO auto-notification armed upon runner check-in.", style = Type.body(13.sp), color = Color.White.copy(alpha = 0.85f))
+                Text("Slot C3 (Osmanthus Plum) is empty.", style = Type.title(18.sp, 800), color = Color.White)
+                Text("When the runner refills it, waiting students are told in the order they asked.", style = Type.body(13.sp), color = Color.White.copy(alpha = 0.85f))
                 Spacer(Modifier.height(14.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Image(
@@ -555,8 +594,8 @@ fun AlertsScreen(s: AppState, dispatch: (Action) -> Unit) {
                     )
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("Assigned Campus Runner", style = Type.body(10.sp, 600), color = Color.White.copy(alpha = 0.7f))
-                        Text("Zhang (Zone A3 Hub)", style = Type.title(14.sp, 800), color = Color.White)
+                        Text("Runner on this job", style = Type.body(10.sp, 600), color = Color.White.copy(alpha = 0.7f))
+                        Text("Zhang", style = Type.title(14.sp, 800), color = Color.White)
                     }
                     Box(
                         Modifier.clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = if (sp.urgentPinged) 0.18f else 1f))
@@ -579,21 +618,21 @@ fun AlertsScreen(s: AppState, dispatch: (Action) -> Unit) {
             ) {
                 Icon(Ic.CheckCircle, null, tint = c.green, modifier = Modifier.size(22.dp))
                 Spacer(Modifier.width(10.dp))
-                Text("No urgent alerts · all coils stocked", style = Type.title(14.sp, 700), color = c.green)
+                Text("Nothing needs action. Every slot has stock.", style = Type.title(14.sp, 700), color = c.green)
             }
         }
 
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Chip("All (${sp.feed.size})", sp.alertFilter == "all", { dispatch(Action.AlertFilter("all")) })
-            Chip("Stockouts (${counts["stockout"]})", sp.alertFilter == "stockout", { dispatch(Action.AlertFilter("stockout")) })
+            Chip("Run out (${counts["stockout"]})", sp.alertFilter == "stockout", { dispatch(Action.AlertFilter("stockout")) })
             Chip("Restocks (${counts["restock"]})", sp.alertFilter == "restock", { dispatch(Action.AlertFilter("restock")) })
-            Chip("VIP Escrows (${counts["escrow"]})", sp.alertFilter == "escrow", { dispatch(Action.AlertFilter("escrow")) })
-            Chip("Clearance (${counts["clearance"]})", sp.alertFilter == "clearance", { dispatch(Action.AlertFilter("clearance")) })
+            Chip("Holds (${counts["escrow"]})", sp.alertFilter == "escrow", { dispatch(Action.AlertFilter("escrow")) })
+            Chip("Price cuts (${counts["clearance"]})", sp.alertFilter == "clearance", { dispatch(Action.AlertFilter("clearance")) })
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (visible.isEmpty()) {
-                Text("No events in this filter yet.", style = Type.body(13.sp), color = c.faint, modifier = Modifier.padding(8.dp))
+                Text("Nothing here yet. Pick another filter to see more.", style = Type.body(13.sp), color = c.faint, modifier = Modifier.padding(8.dp))
             }
             visible.forEach { ev -> key(ev.id) { RiseIn { EventCard(ev) } } }
         }
@@ -602,10 +641,10 @@ fun AlertsScreen(s: AppState, dispatch: (Action) -> Unit) {
         ForestCard(Modifier.fillMaxWidth(), radius = 24.dp) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Peak Surge Telemetry", style = Type.title(15.sp, 800), color = c.ink)
-                    Text("13:30 – 14:00 Window · transactions/min", style = Type.body(11.sp), color = c.faint)
+                    Text("Sales during the rush", style = Type.title(15.sp, 800), color = c.ink)
+                    Text("13:30 to 14:00, sales per minute", style = Type.body(11.sp), color = c.faint)
                 }
-                Pill("Guard Active", c.green, c.greenTint, icon = Ic.Shield)
+                
             }
             Spacer(Modifier.height(12.dp))
             val mini = listOf("13:30" to 6, "35" to 9, "40" to 12, "45" to 17, "50" to 24 + sp.surges * 4, "55" to 19, "14:00" to 14)
@@ -618,8 +657,8 @@ fun AlertsScreen(s: AppState, dispatch: (Action) -> Unit) {
         ) {
             LiveDot(c.green, size = 8.dp)
             Spacer(Modifier.width(10.dp))
-            Text("All systems operational", style = Type.body(13.sp, 600), color = c.ink, modifier = Modifier.weight(1f))
-            Text("28ms · 11 nodes", style = Type.mono(11.sp, 600), color = c.faint)
+            Text("All machines are online", style = Type.body(13.sp, 600), color = c.ink, modifier = Modifier.weight(1f))
+            Text("11 machines", style = Type.body(11.sp, 600), color = c.faint)
         }
     }
 }
@@ -662,6 +701,79 @@ private fun EventCard(ev: FeedEvent) {
                 Spacer(Modifier.height(8.dp))
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     ev.chips.forEach { Pill(it, c.muted, c.surface2) }
+                }
+            }
+        }
+    }
+}
+
+/** Every station on both campuses, emptiest first, with per-flavour stock. Same view as the Softr Supplier Stock page. */
+@Composable
+fun StockScreen(s: AppState, map: com.chiforest.forestflow.core.MapData, dispatch: (Action) -> Unit) {
+    val c = FF.c
+    val campus = s.campusId.takeIf { id -> map.campuses.any { it.id == id } }
+    val nodes = (if (campus == null) map.allNodes else map.campus(campus).nodes).sortedBy { it.pct }
+    val keys = com.chiforest.forestflow.core.Seed.products.map { it.key }
+    val low = 3
+    ScreenColumn {
+        PageTitle("Stock at every machine", "Stock")
+        Text("Pick a campus to switch between Taicang and SIP. Emptiest machines are listed first.", style = Type.body(13.sp), color = c.muted)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Campus", style = Type.body(12.sp, 700), color = c.faint)
+            map.campuses.forEach { cp ->
+                val on = cp.id == s.campusId
+                Text(
+                    cp.name, style = Type.body(12.sp, 700), color = if (on) Color.White else c.muted,
+                    modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) c.ink else c.surface)
+                        .pressable(scaleTo = 0.95f, label = "Show ${cp.name}") { dispatch(Action.StockCampus(cp.id)) }
+                        .padding(horizontal = 14.dp, vertical = 7.dp),
+                )
+            }
+        }
+        val totalLow = nodes.sumOf { n -> keys.count { (n.ready[it] ?: 0) <= low } }
+        ForestCard(Modifier.fillMaxWidth(), radius = 26.dp) {
+            Text("${nodes.size} machines · $totalLow drinks running low (3 or fewer)", style = Type.body(12.sp, 700), color = c.faint)
+            Spacer(Modifier.height(8.dp))
+            keys.chunked(4).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(vertical = 3.dp)) {
+                    row.forEach { k ->
+                        Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(c.surface2).padding(8.dp)) {
+                            Text(k, style = Type.body(10.sp, 600), color = c.faint, maxLines = 1, softWrap = false, overflow = TextOverflow.Visible)
+                            Text("${nodes.sumOf { it.ready[k] ?: 0 }}", style = Type.num(16.sp, 800), color = c.ink)
+                        }
+                    }
+                }
+            }
+        }
+        nodes.forEach { n ->
+            ForestCard(Modifier.fillMaxWidth(), radius = 22.dp) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("${n.shortName} · ${n.label}", style = Type.title(14.sp, 800), color = c.ink, maxLines = 1)
+                        Text(n.location, style = Type.body(11.sp), color = c.faint, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Pill(if (n.isLow) "low" else "online", if (n.isLow) c.amber else c.green, if (n.isLow) c.amberTint else c.greenTint)
+                }
+                Spacer(Modifier.height(8.dp))
+                Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(c.surface2)) {
+                    Box(Modifier.fillMaxWidth(n.pct.coerceIn(0, 100) / 100f).height(6.dp).background(if (n.pct < 40) c.red else c.green))
+                }
+                Text("${n.pct}% full · ${n.tempC}°C", style = Type.body(11.sp), color = c.faint, modifier = Modifier.padding(top = 4.dp))
+                Spacer(Modifier.height(6.dp))
+                keys.chunked(4).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(vertical = 3.dp)) {
+                        row.forEach { k ->
+                            val v = n.ready[k] ?: 0
+                            val isLow = v <= low
+                            Column(
+                                Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(if (isLow) c.redTint else c.surface2).padding(vertical = 6.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Text("$v", style = Type.num(15.sp, 800), color = if (isLow) c.red else c.ink)
+                                Text(k, style = Type.body(9.sp, 600), color = c.faint, maxLines = 1)
+                            }
+                        }
+                    }
                 }
             }
         }

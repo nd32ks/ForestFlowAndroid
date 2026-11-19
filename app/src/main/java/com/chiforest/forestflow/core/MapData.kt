@@ -68,12 +68,29 @@ data class MapNode(
     val demo: Boolean = true,
 ) {
     val isLow: Boolean get() = status == "low"
-    val shortName: String get() = "Node $num"
+    val shortName: String get() = "Machine $num"
 }
 
 /** Pure search over a campus set: nodes first, then buildings. Matches EN + ZH names, codes and departments. */
 object MapSearch {
-    data class Results(val nodes: List<MapNode>, val buildings: List<Pair<Campus, Building>>)
+    data class Results(
+        val nodes: List<MapNode>,
+        val buildings: List<Pair<Campus, Building>>,
+        val drinks: List<DrinkHit> = emptyList(),
+    )
+
+    /** A drink that matches the search, with every machine that has it in stock (shortest walk first). */
+    data class DrinkHit(val product: Product, val stock: List<Pair<MapNode, Int>>)
+
+    /**
+     * Drinks whose English or Chinese name contains [q], across both campuses.
+     * User testing: students did not know where to buy a particular drink.
+     */
+    fun drinks(data: MapData, q: String, products: List<Product> = Seed.products): List<DrinkHit> {
+        if (q.length < 2 && q.none { it.code > 0x2E80 }) return emptyList()   // one Latin letter would match everything
+        return products.filter { listOf(it.name, it.nameZh, it.key).any { n -> n.lowercase().contains(q) } }
+            .map { p -> DrinkHit(p, data.allNodes.mapNotNull { n -> (n.ready[p.key] ?: 0).takeIf { it > 0 }?.let { n to it } }.sortedBy { it.first.walkMin }) }
+    }
 
     fun search(data: MapData, query: String): Results {
         val q = query.trim().lowercase()
@@ -88,12 +105,12 @@ object MapSearch {
             }
             for (n in campus.nodes) {
                 val b = campus.building(n.building)
-                val hay = (listOf(n.id, n.name, n.shortName, n.label, n.location, n.building) +
+                val hay = (listOf(n.id, n.name, n.shortName, "node ${n.num}", n.label, n.location, n.building) +
                     listOfNotNull(b?.name, b?.nameZh) + (b?.departments ?: emptyList()))
                     .joinToString("|").lowercase()
                 if (hay.contains(q)) nodes += n
             }
         }
-        return Results(nodes, buildings)
+        return Results(nodes, buildings, drinks(data, q))
     }
 }

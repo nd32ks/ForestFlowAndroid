@@ -1,11 +1,17 @@
 package com.chiforest.forestflow
 
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.chiforest.forestflow.feature.DropNotifier
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -35,6 +41,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.chiforest.forestflow.feature.customer.LocalDrinkAssistant
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.State
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -52,6 +61,7 @@ import com.chiforest.forestflow.core.Action
 import com.chiforest.forestflow.core.AppState
 import com.chiforest.forestflow.core.AppViewModel
 import com.chiforest.forestflow.core.Effect
+import com.chiforest.forestflow.core.Features
 import com.chiforest.forestflow.core.LogRow
 import com.chiforest.forestflow.core.Role
 import com.chiforest.forestflow.core.SheetKind
@@ -74,6 +84,7 @@ import com.chiforest.forestflow.ui.components.BtnStyle
 import com.chiforest.forestflow.ui.components.ForestButton
 import com.chiforest.forestflow.ui.components.ForestSheet
 import com.chiforest.forestflow.ui.components.GlassHeader
+import com.chiforest.forestflow.ui.components.rememberLowEndDevice
 import com.chiforest.forestflow.ui.components.GlassNavBar
 import com.chiforest.forestflow.ui.components.Hairline
 import com.chiforest.forestflow.ui.components.Ic
@@ -94,12 +105,23 @@ import java.util.Locale
 @Composable
 fun AppRoot(vm: AppViewModel) {
     val s by vm.state.collectAsStateWithLifecycle()
-    val now by vm.now.collectAsStateWithLifecycle()
+    // Held as State and read only inside the countdown composables, so the clock tick does not recompose the whole app.
+    val now = vm.now.collectAsStateWithLifecycle()
     val ready by vm.ready.collectAsStateWithLifecycle()
     val toasts = remember { ToastController() }
     val view = LocalView.current
     val context = LocalContext.current
     val dispatch: (Action) -> Unit = vm::dispatch
+    // A notification waiting for the Android 13+ permission answer.
+    val pendingNotify = remember { arrayOfNulls<Effect.SystemNotify>(1) }
+    val notifyPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val p = pendingNotify[0]
+        pendingNotify[0] = null
+        if (p != null) {
+            if (granted) DropNotifier.post(context, p.title, p.body)
+            else toasts.show("Notifications are off for Forest Flow · turn them on in Settings", ToastIcon.Alert)
+        }
+    }
 
     LaunchedEffect(Unit) {
         vm.effects.collect { e ->
@@ -121,6 +143,12 @@ fun AppRoot(vm: AppViewModel) {
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                     )
                 }.onFailure { toasts.show("Sharing is unavailable on this device", ToastIcon.Alert) }
+                is Effect.SystemNotify -> if (DropNotifier.canPost(context)) {
+                    DropNotifier.post(context, e.title, e.body)
+                } else if (android.os.Build.VERSION.SDK_INT >= 33) {
+                    pendingNotify[0] = e
+                    notifyPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                }
                 else -> Unit
             }
         }
@@ -145,7 +173,7 @@ fun AppRoot(vm: AppViewModel) {
             ) { r ->
                 when (r) {
                     null -> LoginScreen(s, now, dispatch)
-                    else -> RoleShell(s, now, r, vm, dispatch)
+                    else -> CompositionLocalProvider(LocalDrinkAssistant provides vm.assistant) { RoleShell(s, now, r, vm, dispatch) }
                 }
             }
         }
@@ -157,6 +185,8 @@ fun AppRoot(vm: AppViewModel) {
         SheetKind.Buildings -> BuildingsSheet(s, vm.mapData, dispatch)
         SheetKind.Layers -> LayersSheet(s, vm.mapData, dispatch)
         SheetKind.Stations -> StationsSheet(s, vm.mapData, dispatch)
+        SheetKind.Product -> com.chiforest.forestflow.feature.customer.ProductSheet(s, vm.mapData, dispatch)
+        SheetKind.Guide -> com.chiforest.forestflow.feature.GuideSheet(s, dispatch)
         SheetKind.Redeem -> RedeemSheet(s, dispatch)
         SheetKind.Qr -> QrSheet(s, vm.mapData, dispatch)
         SheetKind.Cas -> CasSheet(s, vm.authBackend, vm::casSubmit, dispatch)
@@ -166,16 +196,42 @@ fun AppRoot(vm: AppViewModel) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun RoleShell(s: AppState, now: Long, role: Role, vm: AppViewModel, dispatch: (Action) -> Unit) {
+private fun RoleShell(s: AppState, now: State<Long>, role: Role, vm: AppViewModel, dispatch: (Action) -> Unit) {
     val haze = rememberHazeState()
     val map = vm.mapData
     val student = role == Role.Student
-    val tab = if (student) s.customerTab else s.supplierTab
+    // Hidden features drop out of the student tabs; a tab id saved earlier falls back to the first visible one.
+    val studentTabs = Features.studentTabs()
+    val tab = if (student) Features.effectiveStudentTab(s.customerTab) else s.supplierTab
     val slidePx = with(LocalDensity.current) { Motion.TabSlide.roundToPx() }
     val imeVisible = WindowInsets.isImeVisible
 
+    // Swipe left or right anywhere on a page to go to the next or previous tab (same order as the nav bar).
+    // The map, sliders and sideways-scrolling rows keep their own drags: they consume them first, so no tab change.
+    val order = if (student) studentTabs else listOf(0, 1, 2, 3)
+    val currentTab by rememberUpdatedState(tab)
+    val swipePx = with(LocalDensity.current) { 72.dp.toPx() }
     Box(Modifier.fillMaxSize()) {
-        Box(Modifier.fillMaxSize().hazeSource(haze)) {
+        Box(
+            Modifier.fillMaxSize()
+                .pointerInput(order) {
+                    var dx = 0f
+                    detectHorizontalDragGestures(
+                        onDragStart = { dx = 0f },
+                        onDragEnd = {
+                            val i = order.indexOf(currentTab)
+                            val next = when {
+                                dx <= -swipePx -> order.getOrNull(i + 1)
+                                dx >= swipePx -> order.getOrNull(i - 1)
+                                else -> null
+                            }
+                            if (next != null) dispatch(Action.Tab(next))
+                        },
+                        onHorizontalDrag = { _, amount -> dx += amount },
+                    )
+                }
+                .then(if (rememberLowEndDevice()) Modifier else Modifier.hazeSource(haze)),
+        ) {
             AnimatedContent(
                 targetState = tab,
                 transitionSpec = {
@@ -193,15 +249,17 @@ private fun RoleShell(s: AppState, now: Long, role: Role, vm: AppViewModel, disp
                     2 -> NotificationsScreen(s, dispatch)
                     else -> VipScreen(s, now, map, dispatch)
                 } else when (t) {
-                    0 -> TelemetryScreen(s, vm::clock, dispatch)
+                    0 -> TelemetryScreen(s, map, vm::clock, dispatch)
                     1 -> DispatchScreen(s, vm::clock, dispatch)
-                    else -> AlertsScreen(s, dispatch)
+                    2 -> AlertsScreen(s, dispatch)
+                    else -> com.chiforest.forestflow.feature.supplier.StockScreen(s, map, dispatch)
                 }
             }
         }
 
         val subtitle = when {
-            !student -> "Node 01 Admin · Taicang"
+            !student && tab == 3 -> "All machines · Taicang and SIP"
+            !student -> "Machine 01 · Taicang"
             tab == 1 -> map.campus(s.campusId).subtitle
             else -> {
                 val n = map.node(s.activeNodeId)
@@ -212,6 +270,7 @@ private fun RoleShell(s: AppState, now: Long, role: Role, vm: AppViewModel, disp
             haze, admin = !student, subtitle = subtitle,
             initials = initials(s.session?.displayName ?: "?"),
             onAvatar = { dispatch(Action.Profile) },
+            onHelp = { dispatch(Action.Guide) },
             temp = if (student) "28°" else null,
         )
 
@@ -222,17 +281,21 @@ private fun RoleShell(s: AppState, now: Long, role: Role, vm: AppViewModel, disp
             exit = slideOutVertically { (it * 1.2f).toInt() } + fadeOut(),
         ) {
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
-                val items = if (student) listOf(
-                    NavItem(Ic.Box, "Inventory"),
-                    NavItem(Ic.Navigation, "Campus Map"),
-                    NavItem(Ic.Bell, "Notifications", dot = s.unread > 0),
-                    NavItem(Ic.IdCard, "VIP Pass"),
-                ) else listOf(
+                val items = if (student) studentTabs.map { id ->
+                    when (id) {
+                        0 -> NavItem(Ic.Box, "Inventory")
+                        1 -> NavItem(Ic.Navigation, "Campus Map")
+                        2 -> NavItem(Ic.Bell, "Notifications", dot = s.unread(Features.vipClub) > 0)
+                        else -> NavItem(Ic.IdCard, "VIP Pass")
+                    }
+                } else listOf(
                     NavItem(Ic.BarChart, "Telemetry"),
                     NavItem(Ic.Truck, "Dispatch"),
                     NavItem(Ic.Bell, "Alerts", count = s.aBadge),
+                    NavItem(Ic.Box, "Stock"),
                 )
-                GlassNavBar(haze, items, tab, { dispatch(Action.Tab(it)) })
+                val selected = if (student) studentTabs.indexOf(tab).coerceAtLeast(0) else tab
+                GlassNavBar(haze, items, selected, { i -> dispatch(Action.Tab(if (student) studentTabs[i] else i)) })
             }
         }
     }
@@ -258,9 +321,9 @@ private fun ProfileSheet(s: AppState, vm: AppViewModel, dispatch: (Action) -> Un
         SheetTitle(session.displayName, if (session.role == Role.Student) "Student · Campus app" else "Supplier · Admin console") { dispatch(Action.CloseSheet) }
         InfoRow("Role", session.role.name)
         Hairline()
-        InfoRow("Station", if (session.role == Role.Student) "${node?.shortName} · ${node?.label}" else "Node 01 · Bldg G Atrium")
+        InfoRow("Machine", if (session.role == Role.Student) "${node?.shortName} · ${node?.label}" else "Machine 01 · Building G Atrium")
         Hairline()
-        InfoRow("Session", buildString {
+        InfoRow("Signed in with", buildString {
             append(
                 when (session.method) {
                     "wechat" -> "WeChat (demo)"
@@ -272,12 +335,12 @@ private fun ProfileSheet(s: AppState, vm: AppViewModel, dispatch: (Action) -> Un
             session.email?.let { append(" · $it") }
         })
         Hairline()
-        InfoRow("Database", "SQLite · forestflow.db")
+        InfoRow("Your data", "Saved on this phone")
         Spacer(Modifier.height(14.dp))
-        Text("RECENT ACTIVITY · activity_log", style = Type.eyebrow(10.sp), color = c.faint)
+        Text("Your recent actions", style = Type.body(12.sp, 700), color = c.faint)
         Spacer(Modifier.height(6.dp))
         if (activity.isEmpty()) {
-            Text("No actions logged yet.", style = Type.body(13.sp), color = c.faint)
+            Text("Nothing yet. Things you do in the app show up here.", style = Type.body(13.sp), color = c.faint)
         } else {
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.surface2).padding(horizontal = 12.dp, vertical = 6.dp)) {
                 activity.take(6).forEach { LogLine(it) }

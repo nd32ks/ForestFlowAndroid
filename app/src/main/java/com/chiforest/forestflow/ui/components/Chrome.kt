@@ -38,6 +38,10 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.remember
+import android.content.Context
+import android.app.ActivityManager
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -73,12 +77,35 @@ import kotlinx.coroutines.delay
 @Composable
 fun glassStyle(): HazeStyle {
     val c = FF.c
-    return HazeStyle(
-        backgroundColor = c.bg,
-        tint = HazeTint(c.glass),
-        blurRadius = 24.dp,
-        noiseFactor = 0.04f,
-    )
+    return remember(c) {
+        HazeStyle(
+            backgroundColor = c.bg,
+            tint = HazeTint(c.glass),
+            blurRadius = 18.dp,
+            noiseFactor = 0.04f,
+        )
+    }
+}
+
+/**
+ * Weak devices (flagged low-RAM, or a per-app heap of 128 MB or less) skip the live blur: it re-blurs everything
+ * behind the header and nav bar every frame, which is the most expensive thing on screen. They get a plain
+ * translucent panel instead.
+ */
+@Composable
+fun rememberLowEndDevice(): Boolean {
+    val ctx = LocalContext.current
+    return remember {
+        val am = ctx.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        am.isLowRamDevice || am.memoryClass <= 128
+    }
+}
+
+@Composable
+fun Modifier.glass(hazeState: HazeState): Modifier {
+    val c = FF.c
+    val style = glassStyle()
+    return if (rememberLowEndDevice()) background(c.bg.copy(alpha = 0.94f)) else hazeEffect(hazeState, style)
 }
 
 // ---------------------------------------------------------------- glass pill nav
@@ -108,7 +135,7 @@ fun GlassNavBar(
             .height(66.dp)
             .shadow(24.dp, shape, ambientColor = Color(0x33101828), spotColor = Color(0x40101828))
             .clip(shape)
-            .hazeEffect(hazeState, glassStyle())
+            .glass(hazeState)
             .border(1.dp, c.glassLine, shape)
             .drawWithContent {
                 drawContent()
@@ -195,12 +222,13 @@ fun GlassHeader(
     onAvatar: () -> Unit,
     modifier: Modifier = Modifier,
     temp: String? = null,
+    onHelp: (() -> Unit)? = null,
 ) {
     val c = FF.c
     Box(
         modifier
             .fillMaxWidth()
-            .hazeEffect(hazeState, glassStyle())
+            .glass(hazeState)
             .drawWithContent {
                 drawContent()
                 drawLine(c.line.copy(alpha = 0.6f), Offset(0f, size.height - 0.5f), Offset(size.width, size.height - 0.5f), 1f)
@@ -215,11 +243,12 @@ fun GlassHeader(
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Chi Forest", style = Type.title(16.sp, 800), color = c.ink)
+                    Text("Chi Forest", style = Type.title(16.sp, 800), color = c.ink, maxLines = 1, softWrap = false)
                     Spacer(Modifier.width(6.dp))
                     Text(
                         if (admin) "ADMIN" else "CAMPUS",
                         style = Type.eyebrow(9.sp),
+                        maxLines = 1, softWrap = false,
                         color = if (admin) Color.White else c.red,
                         modifier = Modifier.clip(RoundedCornerShape(6.dp))
                             .background(if (admin) (if (c.isDark) c.surface2 else c.navy) else c.redTint)
@@ -228,9 +257,20 @@ fun GlassHeader(
                 }
                 Text(subtitle, style = Type.body(12.sp, 500), color = c.faint, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            if (temp != null) {
+            // On narrow phones (e.g. Galaxy S24, 360 dp) the weather pill squeezed the title, so it is hidden there.
+            if (temp != null && androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp >= 400) {
                 Pill(temp, c.blue, c.blueTint, icon = Ic.Sun)
                 Spacer(Modifier.width(4.dp))
+            }
+            if (onHelp != null) {
+                Box(
+                    Modifier.size(44.dp).semantics { contentDescription = "How it works" }.pressable(scaleTo = 0.9f, onClick = onHelp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(Modifier.size(30.dp).clip(CircleShape).background(c.surface2), contentAlignment = Alignment.Center) {
+                        Text("?", style = Type.title(15.sp, 800), color = c.ink)
+                    }
+                }
             }
             Box(
                 Modifier.size(48.dp).semantics { contentDescription = "Profile" }.pressable(scaleTo = 0.9f, onClick = onAvatar),

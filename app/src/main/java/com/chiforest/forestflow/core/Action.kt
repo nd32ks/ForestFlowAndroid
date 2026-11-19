@@ -11,7 +11,12 @@ sealed interface Action {
     data object CodeAutofill : Action
     data class Login(val method: String) : Action          // wechat | sms | cas
     data object Visitor : Action
-    data class LoginSucceeded(val session: Session) : Action
+    /** [restored] = this account's saved data (null for a new account); [now] seeds fresh demo data. */
+    data class LoginSucceeded(
+        val session: Session,
+        val restored: AppState? = null,
+        val now: Long = System.currentTimeMillis(),
+    ) : Action
     data class CasFailed(val message: String) : Action
     data object CasStarted : Action
 
@@ -30,6 +35,18 @@ sealed interface Action {
     data class CoilNav(val coil: Int) : Action
     data object Notify : Action
     data object Release : Action
+    data class ProductDetails(val key: String) : Action
+    /** Follow or unfollow one drink: phone alert when it is back in stock. */
+    data class Watch(val key: String) : Action
+    /** One tap: alerts for every new product drop. */
+    data object DropAlerts : Action
+    /** Open the how-it-works guide (also opened automatically after every sign-in). */
+    data object Guide : Action
+    data class GuideStep(val delta: Int) : Action
+    /** "Take me there": close the guide and open this tab. */
+    data class GuideGo(val tab: Int) : Action
+    /** Take the student to the nearest machine that has this drink. */
+    data class FindDrink(val key: String) : Action
 
     // Map
     data class Pin(val nodeId: String) : Action
@@ -74,6 +91,8 @@ sealed interface Action {
     data object CallRunner : Action
     data class Approve(val clock: String) : Action
     data object Decline : Action
+    data class EndClearance(val name: String, val clock: String) : Action
+    data class StockCampus(val campusId: String) : Action
     data class Surge(val clock: String) : Action
     data class ConfirmRestock(val clock: String) : Action
     data object Ping : Action
@@ -88,6 +107,8 @@ sealed interface Effect {
     data class Haptic(val strong: Boolean = false) : Effect
     data class CopyText(val text: String) : Effect
     data class ShareText(val text: String) : Effect
+    /** Post a notification to the phone (asks for permission first on Android 13+). */
+    data class SystemNotify(val title: String, val body: String) : Effect
     data class StartLogin(val method: String, val role: Role) : Effect
     data object ScheduleAutofill : Effect
     data object SignOut : Effect

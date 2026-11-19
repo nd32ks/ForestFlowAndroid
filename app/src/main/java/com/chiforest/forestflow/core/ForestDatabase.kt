@@ -25,6 +25,7 @@ data class LogRow(val id: Long, val ts: Long, val role: String, val action: Stri
  *  - users         local accounts, PBKDF2 password hashes (never plain text)
  *  - app_state     one-row JSON snapshot of AppState so everything survives restarts
  *  - activity_log  append-only audit of meaningful actions (locks, redeems, restocks …)
+ *  - user_state    each account's own copy of its data (points, escrow, watchlist, saved nodes …)
  */
 class ForestDatabase(context: Context) : SQLiteOpenHelper(context, NAME, null, VERSION) {
 
@@ -50,13 +51,16 @@ class ForestDatabase(context: Context) : SQLiteOpenHelper(context, NAME, null, V
                 detail TEXT NOT NULL)""",
         )
         db.execSQL("CREATE INDEX idx_activity_ts ON activity_log(ts DESC)")
+        createUserState(db)
+    }
+
+    private fun createUserState(db: SQLiteDatabase) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS user_state (uid TEXT PRIMARY KEY, json TEXT NOT NULL, updated_at INTEGER NOT NULL)")
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        db.execSQL("DROP TABLE IF EXISTS users")
-        db.execSQL("DROP TABLE IF EXISTS app_state")
-        db.execSQL("DROP TABLE IF EXISTS activity_log")
-        onCreate(db)
+        // v2 adds per-account data; existing accounts, state and logs are kept.
+        if (oldVersion < 2) createUserState(db)
     }
 
     // ---- app_state ----
@@ -71,6 +75,27 @@ class ForestDatabase(context: Context) : SQLiteOpenHelper(context, NAME, null, V
             put("updated_at", now)
         }
         writableDatabase.insertWithOnConflict("app_state", null, v, SQLiteDatabase.CONFLICT_REPLACE)
+    }
+
+    // ---- user_state (one row per account) ----
+    fun loadUserState(uid: String): String? =
+        readableDatabase.rawQuery("SELECT json FROM user_state WHERE uid = ?", arrayOf(uid)).use { c ->
+            if (c.moveToFirst()) c.getString(0) else null
+        }
+
+    /** (state JSON, time it was saved) for an account, or null. */
+    fun loadUserStateWithTime(uid: String): Pair<String, Long>? =
+        readableDatabase.rawQuery("SELECT json, updated_at FROM user_state WHERE uid = ?", arrayOf(uid)).use { c ->
+            if (c.moveToFirst()) c.getString(0) to c.getLong(1) else null
+        }
+
+    fun saveUserState(uid: String, json: String, now: Long) {
+        val v = ContentValues().apply {
+            put("uid", uid)
+            put("json", json)
+            put("updated_at", now)
+        }
+        writableDatabase.insertWithOnConflict("user_state", null, v, SQLiteDatabase.CONFLICT_REPLACE)
     }
 
     // ---- activity_log ----
@@ -130,6 +155,6 @@ class ForestDatabase(context: Context) : SQLiteOpenHelper(context, NAME, null, V
 
     companion object {
         const val NAME = "forestflow.db"
-        const val VERSION = 1
+        const val VERSION = 2
     }
 }

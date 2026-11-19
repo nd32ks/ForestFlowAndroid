@@ -33,3 +33,12 @@ class MapDataTest {
         assertTrue(map.allNodes.all { it.ready.containsKey("White Peach") && it.ready.containsKey("Calamansi") })
     }
 }
+
+class ManifestLabelTest {
+    @Test fun label_follows_fill_level() {
+        org.junit.Assert.assertEquals("Critical", com.chiforest.forestflow.feature.supplier.fillLabel(13))
+        org.junit.Assert.assertEquals("Low", com.chiforest.forestflow.feature.supplier.fillLabel(33))
+        org.junit.Assert.assertEquals("Steady", com.chiforest.forestflow.feature.supplier.fillLabel(73))
+        org.junit.Assert.assertEquals("Full", com.chiforest.forestflow.feature.supplier.fillLabel(100))
+    }
+}

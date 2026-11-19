@@ -2,6 +2,7 @@ package com.chiforest.forestflow
 
 import com.chiforest.forestflow.core.Action
 import com.chiforest.forestflow.core.AppState
+import com.chiforest.forestflow.core.Clearance
 import com.chiforest.forestflow.core.Effect
 import com.chiforest.forestflow.core.Escrow
 import com.chiforest.forestflow.core.MapData
@@ -74,6 +75,23 @@ class ReducerTest {
         val n = r.reduce(fresh(null), Action.LoginSucceeded(supplier))
         assertEquals(Role.Supplier, n.state.session?.role)
         assertTrue(n.effects.any { it is Effect.Log })
+    }
+
+    @Test fun each_account_sees_only_its_own_data() {
+        val other = Session("u9", "Other Student", Role.Student, "cas", guest = false)
+        // student redeems, signs out, another account signs in → fresh data, not the first student's
+        val a = fresh().go(Action.Redeem, Action.DoRedeem("d3"), Action.Logout)
+        assertEquals(330, a.customer.points)
+        val b = a.go(Action.LoginSucceeded(other, null, t0))
+        assertEquals(420, b.customer.points)
+        assertEquals("u9", b.ownerUid)
+        // the same account signing back in (no saved copy passed) keeps what is on screen
+        val again = b.go(Action.Logout, Action.LoginSucceeded(other, null, t0))
+        assertEquals(420, again.customer.points)
+        // a saved copy for the account wins
+        val back = again.go(Action.Logout, Action.LoginSucceeded(student, a, t0))
+        assertEquals(330, back.customer.points)
+        assertEquals(student, back.session)
     }
 
     @Test fun logout_clears_session() = assertNull(fresh().go(Action.Logout).session)
@@ -298,9 +316,78 @@ class ReducerTest {
         assertTrue(effects(s, Action.CallRunner).any { it is Effect.Toast })
     }
 
-    @Test fun approve_and_decline_clearance() {
-        assertEquals("approved", fresh(supplier).go(Action.Approve("13:30")).supplier.clearance)
-        assertEquals("dismissed", fresh(supplier).go(Action.Decline).supplier.clearance)
+    @Test fun clearance_suggests_slowest_seller_over_threshold() {
+        val c = Clearance.candidate(fresh(supplier).supplier)
+        assertNotNull(c)
+        // Barley: 14 cans at 3 cans/h is the slowest product in the seed data
+        assertEquals("Barley", c!!.name)
+        assertTrue(c.hours > Clearance.THRESHOLD_HOURS)
+        assertEquals(4.4, Clearance.salePrice(5.5), 0.001)
+    }
+
+    @Test fun approve_marks_down_then_end_restores() {
+        val s = fresh(supplier).go(Action.Approve("13:30"))
+        assertEquals(4.4, s.supplier.prices["Barley"]!!, 0.001)
+        assertEquals(listOf("Barley"), Clearance.live(s.supplier).map { it.name })
+        assertTrue(Clearance.candidate(s.supplier)?.name != "Barley")
+        assertEquals("Clearance −20% Approved", s.supplier.feed.first().title)
+        val ended = s.go(Action.EndClearance("Barley", "13:40"))
+        assertTrue("Barley" !in ended.supplier.prices)
+        assertTrue(Clearance.live(ended.supplier).isEmpty())
+    }
+
+    @Test fun decline_hides_only_that_product() {
+        val s = fresh(supplier).go(Action.Decline)
+        assertEquals("Barley", s.supplier.clearanceDismissed)
+        assertTrue(Clearance.candidate(s.supplier)?.name != "Barley")
+    }
+
+    @Test fun surge_speeds_up_selling_so_fewer_products_qualify() {
+        val calm = Clearance.lines(fresh(supplier).supplier).count { it.hours > Clearance.THRESHOLD_HOURS }
+        val busy = Clearance.lines(fresh(supplier).go(Action.Surge("13:50")).supplier).count { it.hours > Clearance.THRESHOLD_HOURS }
+        assertTrue(busy < calm)
+    }
+
+    @Test fun tapping_a_drink_opens_its_details() {
+        val s = fresh().go(Action.ProductDetails("Green Tea"))
+        assertEquals(SheetKind.Product, s.sheet)
+        assertEquals("Green Tea", s.productKey)
+        assertNull(s.go(Action.CloseSheet).sheet)
+    }
+
+    @Test fun inventory_products_have_stock_and_photos_everywhere() {
+        assertEquals(11, Seed.products.size)
+        assertEquals(Seed.products.size, Seed.products.map { it.coil }.toSet().size)
+        map.allNodes.forEach { n -> Seed.products.forEach { p -> assertTrue("${n.id} ${p.key}", p.key in n.ready) } }
+    }
+
+    @Test fun unconfirmed_nutrition_is_left_blank_not_guessed() {
+        assertEquals(50, Regex("\\d+").find(Seed.product("Red Bull")!!.info.caffeine)!!.value.toInt())
+        assertNull(Seed.product("Red Bull")!!.info.sugarG)
+        assertEquals(0.0, Seed.product("Grape")!!.info.sugarG!!, 0.0)
+    }
+
+    @Test fun watch_any_drink_posts_a_phone_notification() {
+        val s = fresh().go(Action.Watch("Grape"))
+        assertEquals(listOf("Grape"), s.customer.watch)
+        assertTrue(effects(fresh(), Action.Watch("Grape")).any { it is Effect.SystemNotify })
+        assertTrue(s.go(Action.Watch("Grape")).customer.watch.isEmpty())
+        assertFalse(effects(s, Action.Watch("Grape")).any { it is Effect.SystemNotify })
+    }
+
+    @Test fun watching_osmanthus_keeps_both_flags_in_sync() {
+        val s = fresh().go(Action.Watch("Osmanthus"))
+        assertTrue(s.customer.osmanthusWatch)
+        val off = s.go(Action.Notify)
+        assertFalse(off.customer.osmanthusWatch)
+        assertTrue("Osmanthus" !in off.customer.watch)
+    }
+
+    @Test fun drop_alerts_one_tap() {
+        val s = fresh().go(Action.DropAlerts)
+        assertTrue(s.customer.dropAlerts)
+        assertTrue(effects(fresh(), Action.DropAlerts).any { it is Effect.SystemNotify })
+        assertFalse(s.go(Action.DropAlerts).customer.dropAlerts)
     }
 
     @Test fun surge_updates_metrics() {
@@ -325,5 +412,64 @@ class ReducerTest {
         assertTrue(s.supplier.urgentPinged)
         assertEquals("stockout", s.supplier.alertFilter)
         assertTrue(s.supplier.muted)
+    }
+
+    // ---------------- guide, find drink
+    @Test fun every_sign_in_opens_the_guide_at_step_one() {
+        val s = fresh(null).go(Action.LoginSucceeded(student, null, t0))
+        assertEquals(SheetKind.Guide, s.sheet)
+        assertEquals(0, s.guideStep)
+        val again = s.go(Action.CloseSheet, Action.Logout, Action.LoginSucceeded(student, null, t0))
+        assertEquals(SheetKind.Guide, again.sheet)
+        assertEquals(SheetKind.Guide, fresh(null).go(Action.LoginSucceeded(supplier, null, t0)).sheet)
+    }
+
+    @Test fun guide_steps_move_and_stay_in_range() {
+        val n = com.chiforest.forestflow.core.Guide.steps(Role.Student).size
+        var s = fresh().go(Action.Guide)
+        assertEquals(SheetKind.Guide, s.sheet)
+        s = s.go(Action.GuideStep(-1)); assertEquals(0, s.guideStep)
+        repeat(n + 3) { s = s.go(Action.GuideStep(1)) }
+        assertEquals(n - 1, s.guideStep)
+        assertNull(s.go(Action.CloseSheet).sheet)
+    }
+
+    @Test fun guide_take_me_there_opens_the_tab_and_closes() {
+        val s = fresh().go(Action.Guide, Action.GuideGo(2))
+        assertNull(s.sheet)
+        assertEquals(2, s.customerTab)
+        val sup = fresh(supplier).go(Action.Guide, Action.GuideGo(1))
+        assertEquals(1, sup.supplierTab)
+    }
+
+    @Test fun guide_leaves_out_steps_for_features_that_are_off() {
+        val all = com.chiforest.forestflow.core.Guide.steps(Role.Student, map = true, vip = true)
+        val bare = com.chiforest.forestflow.core.Guide.steps(Role.Student, map = false, vip = false)
+        assertEquals(all.size, bare.size)
+        assertTrue(bare.none { "VIP" in it.where || "QR" in it.body || "Campus Map" in it.body })
+        assertTrue(all.any { "QR" in it.body })
+        assertTrue(com.chiforest.forestflow.core.Guide.steps(Role.Supplier).size >= 4)
+        assertTrue(all.all { "payment" !in it.body || "doesn’t take payment" in it.body })
+    }
+
+    @Test fun find_drink_goes_to_the_nearest_machine_that_has_it() {
+        val s = fresh()
+        val node = map.node(s.activeNodeId)!!
+        val key = Seed.products.first { (node.ready[it.key] ?: 0) == 0 && com.chiforest.forestflow.core.Nearby.nearest(map, node.id, it.key) != null }.key
+        val nearest = com.chiforest.forestflow.core.Nearby.nearest(map, node.id, key)!!
+        assertTrue((nearest.ready[key] ?: 0) > 0)
+        assertTrue(map.allNodes.filter { it.id != node.id && (it.ready[key] ?: 0) > 0 }.all { nearest.walkMin <= it.walkMin })
+        val next = s.go(Action.ProductDetails(key), Action.FindDrink(key))
+        assertNull(next.sheet)
+        assertEquals(nearest.id, next.selectedNodeId)
+    }
+
+    @Test fun find_drink_in_stock_here_stays_put() {
+        val s = fresh()
+        val node = map.node(s.activeNodeId)!!
+        val key = Seed.products.first { (node.ready[it.key] ?: 0) > 0 }.key
+        val e = effects(s, Action.FindDrink(key))
+        assertTrue(e.filterIsInstance<Effect.Toast>().any { "right here" in it.text })
+        assertEquals(s.selectedNodeId, s.go(Action.FindDrink(key)).selectedNodeId)
     }
 }

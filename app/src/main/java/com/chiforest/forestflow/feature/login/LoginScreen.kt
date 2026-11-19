@@ -35,6 +35,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -80,10 +82,11 @@ import com.chiforest.forestflow.ui.theme.FF
 import com.chiforest.forestflow.ui.theme.Type
 
 @Composable
-fun LoginScreen(s: AppState, now: Long, dispatch: (Action) -> Unit) {
+fun LoginScreen(s: AppState, now: State<Long>, dispatch: (Action) -> Unit) {
     val c = FF.c
     val supplier = s.loginRole == UserRole.Supplier
-    val codeLeft = s.codeLeftSec(now)
+    // Stays 0 until a code is requested, so the clock tick only recomposes this screen during the SMS countdown.
+    val codeLeft by remember(s) { derivedStateOf { s.codeLeftSec(now.value) } }
     Box(Modifier.fillMaxSize().background(c.bg)) {
         // ambient brand glow
         Canvas(Modifier.fillMaxWidth().height(420.dp)) {
@@ -114,9 +117,14 @@ fun LoginScreen(s: AppState, now: Long, dispatch: (Action) -> Unit) {
                 Spacer(Modifier.width(14.dp))
                 Column {
                     Text("元气森林 Chi Forest", style = Type.display(26.sp, 800), color = c.ink)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("XJTLU Campus Node 01", style = Type.body(13.sp, 500), color = c.faint)
-                        Spacer(Modifier.width(8.dp))
+                    // FlowRow: on narrow phones (360 dp) the badge moves under the subtitle instead of being cut off
+                    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                    androidx.compose.foundation.layout.FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        itemVerticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("XJTLU campus vending machines", style = Type.body(13.sp, 500), color = c.faint)
                         Pill("智选冷柜", c.red, c.redTint)
                     }
                 }
@@ -209,7 +217,7 @@ fun LoginScreen(s: AppState, now: Long, dispatch: (Action) -> Unit) {
                     Text("太仓校区教学主楼 G层 02号智能柜", style = Type.body(13.sp, 600), color = c.ink, maxLines = 1)
                     Text("· 离您 12 米", style = Type.body(12.sp), color = c.faint)
                 }
-                Pill("正常运行", c.green, c.greenTint, dot = true, pulse = true)
+                Pill("正常运行", c.green, c.greenTint, dot = true)
             }
             Spacer(Modifier.height(16.dp))
 
@@ -285,17 +293,18 @@ private fun InputText(
 private fun AuthTile(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, sub: String, modifier: Modifier, loading: Boolean, onClick: () -> Unit) {
     val c = FF.c
     Row(
-        modifier.softCard(RoundedCornerShape(20.dp)).pressable(scaleTo = 0.96f, onClick = onClick).padding(14.dp),
+        modifier.softCard(RoundedCornerShape(20.dp)).pressable(scaleTo = 0.96f, onClick = onClick).padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(36.dp).clip(RoundedCornerShape(11.dp)).background(c.blueTint), contentAlignment = Alignment.Center) {
             if (loading) androidx.compose.material3.CircularProgressIndicator(color = c.blue, strokeWidth = 2.dp, modifier = Modifier.size(16.dp))
             else Icon(icon, null, tint = c.blue, modifier = Modifier.size(19.dp))
         }
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(8.dp))
         Column {
-            Text(title, style = Type.title(14.sp, 700), color = c.ink, maxLines = 1)
-            Text(sub, style = Type.body(11.sp), color = c.faint, maxLines = 1)
+            // two lines allowed: "访客 / 教职工" did not fit one line on a 360 dp phone
+            Text(title, style = Type.title(14.sp, 700), color = c.ink, maxLines = 2)
+            Text(sub, style = Type.body(11.sp), color = c.faint, maxLines = 2)
         }
     }
 }

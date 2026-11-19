@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.chiforest.forestflow.auth.AuthResult
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -24,8 +26,9 @@ import java.util.Locale
 
 /** Single source of truth: StateFlow<AppState> + SharedFlow<Effect>, persisted to SQLite on every change. */
 class AppViewModel(private val c: AppContainer) : ViewModel() {
-    private val reducer = Reducer(c.mapData)
+    private val reducer = Reducer(c.mapData, seedEscrow = Features.vipClub)
     val mapData: MapData get() = c.mapData
+    val assistant get() = c.assistant
     val authBackend: String get() = c.auth.backendName
 
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = false }
@@ -51,7 +54,7 @@ class AppViewModel(private val c: AppContainer) : ViewModel() {
             val restored = withContext(Dispatchers.IO) {
                 runCatching { c.db.loadState() }.getOrNull()?.let { runCatching { json.decodeFromString(AppState.serializer(), it) }.getOrNull() }
             }
-            _state.value = restored ?: Seed.fresh(System.currentTimeMillis())
+            _state.value = (restored ?: Seed.fresh(System.currentTimeMillis(), escrow = Features.vipClub)).hideOffFeatures()
             _ready.value = true
             dispatch(Action.Tick(System.currentTimeMillis())) // expire escrows that lapsed while closed
             persist()
@@ -67,14 +70,50 @@ class AppViewModel(private val c: AppContainer) : ViewModel() {
         }
     }
 
+    /** State saved while a feature was on may reference it: drop what the hidden features own (hold) so nothing stray shows. */
+    private fun AppState.hideOffFeatures(): AppState =
+        if (!Features.vipClub && customer.escrow != null) copy(customer = customer.copy(escrow = null)) else this
+
     private fun persist() {
         viewModelScope.launch {
             _state.map { json.encodeToString(AppState.serializer(), it) }
+                .flowOn(Dispatchers.Default) // the full-state JSON encode runs off the main thread
                 .distinctUntilChanged()
                 .drop(1)
                 .conflate() // no debounce: a sign-out is on disk before the user can kill the app
-                .collect { snapshot -> withContext(Dispatchers.IO) { runCatching { c.db.saveState(snapshot, System.currentTimeMillis()) } } }
+                .collect { snapshot ->
+                    val uid = _state.value.session?.uid
+                    val t = System.currentTimeMillis()
+                    withContext(Dispatchers.IO) {
+                        runCatching {
+                            c.db.saveState(snapshot, t)
+                            if (uid != null) c.db.saveUserState(uid, snapshot, t)
+                        }
+                    }
+                    if (uid != null) scheduleRemote(uid, snapshot, t)
+                }
         }
+    }
+
+    // ---- cloud copy (Supabase `user_state`): local SQLite is saved first; the cloud follows ~1.5 s after the last change
+    private data class Pending(val uid: String, val json: String, val ts: Long)
+    private var pending: Pending? = null
+    private var remoteJob: Job? = null
+
+    private fun scheduleRemote(uid: String, snapshot: String, ts: Long) {
+        if (!c.remote.enabled || !c.remote.hasSession(uid)) return
+        pending = Pending(uid, snapshot, ts)
+        remoteJob?.cancel()
+        remoteJob = viewModelScope.launch {
+            delay(1_500)
+            flushRemote()
+        }
+    }
+
+    private suspend fun flushRemote() {
+        val p = pending ?: return
+        pending = null
+        withContext(Dispatchers.IO) { runCatching { c.remote.pushState(p.uid, p.json, p.ts) } }
     }
 
     fun dispatch(action: Action) {
@@ -94,23 +133,55 @@ class AppViewModel(private val c: AppContainer) : ViewModel() {
                     "sms" -> "Mobile ${Reducer.maskPhone(_state.value.phone)}"
                     else -> if (effect.role == Role.Student) "Campus Visitor" else "Visiting Staff"
                 }
-                dispatch(Action.LoginSucceeded(Session("guest-${effect.method}-${System.currentTimeMillis()}", name, effect.role, effect.method)))
+                // stable guest ids, so the same guest on this phone gets their data back
+                val id = when (effect.method) {
+                    "sms" -> "guest-sms-${_state.value.phone}-${effect.role.name}"
+                    else -> "guest-${effect.method}-${effect.role.name}"
+                }
+                signedIn(Session(id, name, effect.role, effect.method))
             }
             Effect.ScheduleAutofill -> viewModelScope.launch {
                 delay(900)
                 dispatch(Action.CodeAutofill)
             }
-            Effect.SignOut -> viewModelScope.launch { c.auth.signOut() }
+            Effect.SignOut -> viewModelScope.launch {
+                remoteJob?.cancel()
+                flushRemote() // the last changes reach the cloud before the cloud session ends
+                c.auth.signOut()
+            }
             is Effect.Log -> {
+                val uid = _state.value.session?.uid
                 val role = _state.value.session?.role?.name ?: "Guest"
                 viewModelScope.launch(Dispatchers.IO) {
                     runCatching {
                         c.db.log(System.currentTimeMillis(), role, effect.action, effect.detail)
                         _activity.value = c.db.recentLogs(8)
                     }
+                    if (uid != null && c.remote.hasSession(uid)) {
+                        runCatching { c.remote.logActivity(uid, role, effect.action, effect.detail) }
+                    }
                 }
             }
             else -> _effects.tryEmit(effect)
+        }
+    }
+
+    /**
+     * Loads this account's own saved data and enters the app with it: the newer of the on-device copy and the
+     * Supabase copy (last write wins), or fresh demo data for a first sign-in.
+     */
+    fun signedIn(session: Session) {
+        viewModelScope.launch {
+            val local = withContext(Dispatchers.IO) { runCatching { c.db.loadUserStateWithTime(session.uid) }.getOrNull() }
+            val remote = if (!session.guest && c.remote.enabled) {
+                withContext(Dispatchers.IO) { runCatching { c.remote.pullState(session.uid) }.getOrNull() }
+            } else {
+                null
+            }
+            val chosen = if (remote != null && (local == null || remote.clientTs > local.second)) remote.json else local?.first
+            val saved = chosen?.let { runCatching { json.decodeFromString(AppState.serializer(), it) }.getOrNull() }?.hideOffFeatures()
+            dispatch(Action.LoginSucceeded(session, saved, System.currentTimeMillis()))
+            dispatch(Action.Tick(System.currentTimeMillis())) // an escrow saved earlier may have lapsed
         }
     }
 
@@ -138,7 +209,7 @@ class AppViewModel(private val c: AppContainer) : ViewModel() {
                     dispatch(Action.CasFailed("This is a ${r.session.role.name} account · switch to the ${r.session.role.name} tab"))
                 } else {
                     delay(250)
-                    dispatch(Action.LoginSucceeded(r.session))
+                    signedIn(r.session)
                 }
             }
         }

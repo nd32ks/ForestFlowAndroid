@@ -16,7 +16,6 @@ import com.chiforest.forestflow.core.Role
 import com.chiforest.forestflow.core.Session
 import com.chiforest.forestflow.core.UserRow
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.json.Json
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -153,7 +152,7 @@ class BackendTest {
     }
 
     @Test fun cas_role_mismatch_is_rejected() {
-        val opsEmail = "ops${System.currentTimeMillis()}@xjtlu.test"
+        val opsEmail = "ops${System.currentTimeMillis()}@example.com"
         val inst = InstrumentationRegistry.getInstrumentation()
         val vm: AppViewModel? = newVm()
         waitUntil { vm!!.ready.value }
@@ -183,12 +182,39 @@ class BackendTest {
         waitUntil { vm!!.state.value.session != null }
         assertEquals("Ops Two", vm!!.state.value.session!!.displayName)
         assertEquals(Role.Supplier, vm!!.state.value.session!!.role)
-        // when the build talks to Firebase, remove the throw-away cloud account again
-        if (vm!!.authBackend == "Firebase") runBlocking {
-            com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.let { u ->
-                if (u.email.equals(opsEmail, true)) u.delete().await()
-            }
+        // when the build talks to Supabase, remove the throw-away cloud account again
+        if (vm!!.authBackend == "Supabase") runBlocking { AppContainer(ctx).supabase?.deleteAccount() }
+    }
+
+    @Test fun each_account_keeps_its_own_data_across_restarts() {
+        val inst = InstrumentationRegistry.getInstrumentation()
+        val ann = Session("acct-ann", "Ann", Role.Student, "cas", guest = false)
+        val bo = Session("acct-bo", "Bo", Role.Student, "cas", guest = false)
+        val vm = newVm()
+        waitUntil { vm.ready.value }
+        inst.runOnMainSync { vm.signedIn(ann) }
+        waitUntil { vm.state.value.session == ann }
+        inst.runOnMainSync {
+            vm.dispatch(Action.Redeem)
+            vm.dispatch(Action.DoRedeem("d3"))
+            vm.dispatch(Action.Save("N06"))
         }
+        waitUntil { ForestDatabase(ctx).use { db -> db.loadUserState("acct-ann")?.contains("N06") == true } }
+        inst.runOnMainSync { vm.dispatch(Action.Logout) }
+
+        inst.runOnMainSync { vm.signedIn(bo) }
+        waitUntil { vm.state.value.session == bo }
+        assertEquals(420, vm.state.value.customer.points)       // Bo does not see Ann's points
+        assertFalse("N06" in vm.state.value.savedNodes)
+        inst.runOnMainSync { vm.dispatch(Action.Logout) }
+
+        // "restart" the app, then Ann signs in again and gets her own data back
+        val vm2 = newVm()
+        waitUntil { vm2.ready.value }
+        inst.runOnMainSync { vm2.signedIn(ann) }
+        waitUntil { vm2.state.value.session == ann }
+        assertEquals(330, vm2.state.value.customer.points)
+        assertTrue("N06" in vm2.state.value.savedNodes)
     }
 
     private fun waitUntil(timeoutMs: Long = 8_000, cond: () -> Boolean) {

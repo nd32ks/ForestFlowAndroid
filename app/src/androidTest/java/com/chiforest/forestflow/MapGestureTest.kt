@@ -36,6 +36,7 @@ class MapGestureTest {
     private lateinit var scenario: ActivityScenario<MainActivity>
 
     @Before fun launch() {
+        org.junit.Assume.assumeTrue("map is switched off in the demo scope", BuildConfig.FEATURE_CAMPUS_MAP)
         MainActivity.resetContainer()
         ctx.deleteDatabase(ForestDatabase.NAME)
         scenario = ActivityScenario.launch(MainActivity::class.java)
@@ -49,7 +50,7 @@ class MapGestureTest {
     }
 
     @After fun close() {
-        scenario.close()
+        if (::scenario.isInitialized) scenario.close()
         MainActivity.resetContainer()
         ctx.deleteDatabase(ForestDatabase.NAME)
     }
@@ -104,6 +105,6 @@ class MapGestureTest {
         assertTrue("cx ${cam.cx} out of range", cam.cx in 0f..1f)
         assertTrue(cam.cy in 0f..1f)
         // the page did not scroll away: the search field is still on screen
-        rule.onAllNodes(hasText("Search nodes or buildings…", substring = true), useUnmergedTree = true).onFirst().assertExists()
+        rule.onAllNodes(hasText("Drink, machine or building…", substring = true), useUnmergedTree = true).onFirst().assertExists()
     }
 }

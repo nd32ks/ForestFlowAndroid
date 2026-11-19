@@ -435,11 +435,11 @@ fun StatTile(label: String, value: String, modifier: Modifier = Modifier, sub: S
                 Icon(icon, null, tint = c.faint, modifier = Modifier.size(14.dp))
                 Spacer(Modifier.width(4.dp))
             }
-            Text(label.uppercase(), style = Type.eyebrow(10.sp), color = c.faint, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(label.uppercase(), style = Type.eyebrow(10.sp), color = c.faint, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         Spacer(Modifier.height(6.dp))
         Text(value, style = Type.num(22.sp, 800), color = accent, maxLines = 1)
-        if (sub != null) Text(sub, style = Type.body(11.sp, 600), color = subColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (sub != null) Text(sub, style = Type.body(11.sp, 600), color = subColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }
 

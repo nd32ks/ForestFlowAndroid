@@ -5,12 +5,10 @@ Students find chilled-drink nodes on a real campus map, lock a coil in escrow, s
 machine, get restock alerts and use a VIP pass. Suppliers watch telemetry, dispatch runners, approve
 clearance prices and confirm restocks.
 
-Accounts live in **Firebase** (project `forestflow-55d9c`), so an account created on one phone signs in on
-any other phone. Everything else (inventory, map, escrow, points…) is stored on the phone in an on-device
-**SQLite database** and works offline. Package name: `forest.flow` (matches the Firebase registration).
-
-`app/google-services.json` is kept out of Git on purpose. A fresh clone without it still builds and runs, with
-accounts stored per phone instead of in the cloud; drop the file back into `app/` to reconnect Firebase.
+Accounts and each account's data live in **Supabase** (Postgres + Auth), so an account created on one phone signs in
+on any other phone and finds its points, escrow and saved stations there. The app keeps a copy in an on-device
+**SQLite database** and works fully offline too: with no Supabase project configured it runs on SQLite alone.
+Package name: `forest.flow`.
 
 ---
 
@@ -26,13 +24,39 @@ accounts stored per phone instead of in the cloud; drop the file back into `app/
 
 Requirements: Android 8.0 (API 26) or newer. Android Studio 2026.1 or newer (uses its bundled JDK 21).
 
+## Demo scope: login + two features (the rest is hidden)
+
+This build shows the **login page** and **two features**; everything else is built, tested and hidden behind a switch.
+
+| Shown now | What the user sees |
+|---|---|
+| Login | Student / Supplier, WeChat, SMS code, XJTLU CAS (real accounts), Visitor |
+| **Feature 1: AI stock prediction and dispatch** (supplier) | Telemetry (coil matrix, AI Predictive Restock), Dispatch (pipeline, runner, manifest, surge, confirm restock), Alerts |
+| **Feature 2: restock radar and Notify Me** (student) | Inventory (live stock, *Notify Me*), Notifications (watchlist, drop alerts, preferences) |
+
+| Hidden for now | Switch |
+|---|---|
+| **Feature 3: VIP club**: VIP Pass tab, 10-minute escrow (Lock / Release / QR), points and redeem, the escrow and VIP cards in Notifications | `vip` |
+| **Campus map**: Campus Map tab, Route / Navigate / I'm Here, directions, station list | `map` |
+
+**To bring a feature out**, add one line to `local.properties` and press Run again (nothing else changes):
+
+```properties
+features=vip          # the VIP club (Feature 3)
+features=vip,map      # VIP club + campus map
+features=all          # everything
+```
+
+(or build with `-Pfeatures=all`, or set `FF_FEATURES`). Remove the line to hide them again. Use **Profile ▸ Reset demo data**
+after switching VIP on so the seeded 10-minute hold appears.
+
 ## Demo logins
 
 | Path | How |
 |---|---|
 | WeChat one-tap | Tick the agreement, tap the green WeChat button (demo guest session) |
 | SMS | Any valid mainland number (e.g. `13800138000`) → **获取验证码** → code `482915` auto-fills → Sign In |
-| **XJTLU CAS (real accounts, Firebase)** | `student@xjtlu.test` / `forest123` (Student) · `supplier@xjtlu.test` / `forest123` (Supplier). Or tap *Create account* |
+| **XJTLU CAS (real accounts: Supabase, or SQLite offline)** | `student@example.com` / `forest123` (Student) · `supplier@example.com` / `forest123` (Supplier). Or tap *Create account* |
 | Visitor | Visitor tile (demo guest session) |
 
 Choose **Student** or **Supplier** with the switch at the top of the login screen first. A CAS account only
@@ -67,26 +91,42 @@ State survives closing the app (kill it and reopen: same tab, same escrow countd
 
 See it live: Android Studio ▸ **View ▸ Tool Windows ▸ App Inspection ▸ Database Inspector** while the app runs.
 
-### Shared accounts for everyone (Firebase) — connected
-Without Firebase every phone keeps its **own** account database: anyone can create an account, but only on
-that phone. To let an account made on one phone sign in on any other phone, connect the free Firebase backend
-(the code is already in the app and verified, see *Tests*). The two demo accounts are created in the cloud
-automatically the first time someone signs in with them, so they work on every phone too.
+### Shared accounts and cloud data (Supabase)
 
-1. Create a free Firebase project (Spark plan).
-2. Add an Android app with package `com.chiforest.forestflow`.
-3. Enable **Authentication ▸ Email/Password** and create a **Cloud Firestore** database.
-4. Download `google-services.json` into `app/`.
-5. Sync Gradle and Run. CAS sign-in now uses Firebase; roles live in Firestore `users/{uid}`.
-   Only **Email/Password** sign-in is required: the role and name are stored on the Firebase account itself.
-   Optional, to also keep a `users/{uid}` copy in Firestore, publish this rule:
-   `match /users/{uid} { allow read, write: if request.auth != null && request.auth.uid == uid; }`
+With a Supabase project connected, **anyone can create an account and use it on any phone**: the account lives in
+Supabase Auth, and each account's data is a row in Postgres protected by Row Level Security (a user can only read
+and write their own rows). Local SQLite stays as the offline copy; on sign-in the newer of the phone's copy and the
+cloud copy wins, and changes reach the cloud about 1.5 s after the last tap. The two demo accounts are created in
+the cloud automatically the first time someone signs in with them.
 
-Without that file the app builds and runs fully offline.
+1. Create a free project at <https://supabase.com> (Dashboard ▸ New project).
+2. **SQL Editor ▸ New query**, paste the whole of [`supabase/schema.sql`](supabase/schema.sql), **Run**.
+   It creates `profiles`, `user_state`, `activity_log` and `delete_my_account()`, all with Row Level Security.
+3. **Authentication ▸ Providers ▸ Email**: keep Email **on** and switch **Confirm email off** for the demo
+   (if it stays on, the app tells the user to confirm the e-mail first, then sign in).
+4. **Project Settings ▸ API**: copy the *Project URL* and the *anon / publishable key*.
+5. Add both to `local.properties` (not committed), then **Sync Gradle and Run**:
+
+   ```properties
+   supabase.url=https://YOUR-PROJECT.supabase.co
+   supabase.anonKey=YOUR-ANON-OR-PUBLISHABLE-KEY
+   ```
+
+   (or put them in `supabase.properties`, see `supabase.properties.example`, or in the `SUPABASE_URL` /
+   `SUPABASE_ANON_KEY` environment variables). The anon key is meant to be public; Row Level Security is what
+   protects the data. Never put the `service_role` key in the app.
+
+Without those two values the app builds and runs fully offline on SQLite. The profile sheet shows which
+backend is active (*XJTLU CAS · Supabase* or *SQLite*).
+
+**Try it without an account:** `python3 tools/fake_supabase.py` starts a local stand-in that speaks the same
+protocol; run the app or tests against it with
+`SUPABASE_URL=http://10.0.2.2:54321 SUPABASE_ANON_KEY=test-anon-key ./gradlew connectedDebugAndroidTest`
+(the emulator reaches the host as `10.0.2.2`).
 
 ## Campus map
 
-Real XJTLU maps: Taicang (`tc_campus.png`, from the official illustrated map) and SIP (`sip_campus.png`,
+Real XJTLU maps: Taicang (`tc_campus.webp`, from the official illustrated map) and SIP (`sip_campus.webp`,
 rendered from *XJTLU-SIP-Campus-Map-March2026-v2.pdf*). Buildings, entrances, points of interest and the
 11 vending nodes are in `app/src/main/assets/maps/map_data.json` as fractions of image width/height —
 edit that file to move a machine. Node locations are **demo placeholders** (`"demo": true`).
@@ -96,24 +136,26 @@ are illustrations without a path network, so there is no turn-by-turn routing.
 
 ## Tests
 
-* `./gradlew test` — 60 JVM tests: every reducer action, map geometry (clamp, rubber-band, momentum
+* `./gradlew test` — 77 JVM tests: every reducer action, map geometry (clamp, rubber-band, momentum
   projection), bilingual search, password hashing, and that every vending node sits on its own building in `map_data.json`.
-* `./gradlew connectedDebugAndroidTest` (phone or emulator attached) — 15 instrumented tests on the real
+* `./gradlew connectedDebugAndroidTest` (phone or emulator attached) — instrumented tests (the demo scope runs the demo-scope test; `-Pfeatures=all` runs the full-app flows and the map gestures; the 3 cloud tests need Supabase) on the real
   SQLite backend (tables, auth, persistence across restarts, escrow expiry after reopen, role mismatch) and
   end-to-end UI flows that tap through every Student and Supplier feature, and real multi-touch on the
   map (double-tap zoom, pinch in/out, pan, an over-the-edge fling that must settle inside the image).
 * `./gradlew lint` — no issues.
 
-* `FirebaseBackendTest` (4 tests) runs when the app is built with a `google-services.json`. It passes against the
-  **real Firebase project** and against the local **Firebase Emulator Suite** (project `demo-forestflow`): an account created by one app instance signs in
-  from a second instance with the same role and name, the app's own CAS login path works on Firebase, wrong
-  passwords and duplicate e-mails are rejected, and the demo accounts auto-provision. Reproduce with
-  `firebase emulators:start --only auth,firestore --project demo-forestflow`, a demo `app/google-services.json`, and
-  `./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.firebaseEmulator=10.0.2.2`.
+* `SupabaseBackendTest` (11 JVM tests) runs the Supabase client against an in-process fake that speaks the real
+  GoTrue / PostgREST protocol: sign-up and sign-in on a second phone, friendly errors, the e-mail-confirmation
+  switch, demo-account provisioning, per-account Row Level Security, token refresh, retries, offline, account deletion.
+* `SupabaseCloudTest` (3 instrumented tests) runs when the build has a Supabase URL and key: accounts across phones,
+  and the app's data following the account to a brand-new phone (no local database, no saved session).
+
+* `./gradlew connectedReleaseAndroidTest -PtestRelease` — the same instrumented tests against the R8-minified
+  release build (test-only keep rules in `app/proguard-test-rules.pro`).
 
 When running UI tests on a phone, keep the screen unlocked and awake (Developer options ▸ Stay awake).
 
-All of the above pass on a physical phone (Nothing A059, Android 17 / API 37) and on an Android 16 / API 36 emulator.
+All of the above pass on a physical phone (Nothing A059, Android 17 / API 37) — debug and release builds — and on an Android 16 / API 36 emulator.
 Build outputs are written to `app/build.nosync/` (kept out of iCloud sync).
 
 ## Project layout
@@ -122,7 +164,7 @@ Build outputs are written to `app/build.nosync/` (kept out of iCloud sync).
 app/src/main/java/com/chiforest/forestflow/
   MainActivity.kt, AppRoot.kt        shell, effects (toast, haptics, clipboard, share), sheets
   core/       AppState, Action, Reducer (pure), AppViewModel, ForestDatabase (SQLite), MapData, seed
-  auth/       AuthRepository, LocalAuthRepository (SQLite + PBKDF2), FirebaseAuthRepository
+  auth/       AuthRepository, LocalAuthRepository (SQLite + PBKDF2), SupabaseApi + SupabaseBackend (Auth + cloud sync)
   ui/theme/   colour tokens (light + dark), type ramp, motion springs
   ui/components/  glass nav pill, glass header, toasts, sheets, segmented control, switch, QR, charts, icons
   feature/login, feature/customer (Inventory, Map, Notifications, VIP), feature/supplier (Telemetry, Dispatch, Alerts)
@@ -131,4 +173,4 @@ docs/PARITY.md      action → screen → test map
 ```
 
 Fonts: Plus Jakarta Sans, Inter, JetBrains Mono (SIL OFL). Libraries: Compose, Haze (glass blur), ZXing (QR),
-kotlinx.serialization, optional Firebase. All free and open source.
+kotlinx.serialization, optional Supabase. All free and open source.
