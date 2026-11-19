@@ -208,7 +208,12 @@ class SupabaseBackend(
             e.status == 401 || e.status == 403 -> "The Supabase key is not accepted (check supabase.anonKey)"
             else -> e.message.ifBlank { "Sign-in failed" }
         }
-        is IOException -> "No connection to the account server"
+        is IOException -> OFFLINE
         else -> e.message?.ifBlank { null } ?: "Sign-in failed"
+    }
+
+    companion object {
+        /** Returned when the server cannot be reached at all (no network, blocked, or the project is paused). */
+        const val OFFLINE = "No connection to the account server"
     }
 }

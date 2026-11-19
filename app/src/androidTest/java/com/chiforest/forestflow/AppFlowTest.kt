@@ -140,7 +140,8 @@ class AppFlowTest {
         see("Demo account · tap to fill")
         tap("Demo account · tap to fill")
         tap("Sign in")
-        see("Welcome, Demo Student", substring = true)
+        // the account server may be unreachable: the app waits up to 6 s, then signs in on this phone
+        rule.waitUntil(20_000) { rule.onAllNodes(hasText("Welcome, Demo Student", substring = true), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
         skipGuide()
         see("DRINKS IN THIS MACHINE")
     }
@@ -155,7 +156,10 @@ class AppFlowTest {
         }
         swipePage(left = true, yFrac = 0.35f)        // Inventory -> Campus Map
         see("Drink, machine or building…")
-        swipePage(left = false, yFrac = 0.27f)       // on the campus switch above the map (the map itself pans): Campus Map -> Inventory
+        // on the campus switch above the map (the map itself pans): Campus Map -> Inventory
+        rule.onAllNodes(hasText("Taicang 太仓"), useUnmergedTree = true).onFirst().performTouchInput {
+            swipe(androidx.compose.ui.geometry.Offset(10f, centerY), androidx.compose.ui.geometry.Offset(10f + 700f, centerY), 250)
+        }
         see("DRINKS IN THIS MACHINE")
     }
 

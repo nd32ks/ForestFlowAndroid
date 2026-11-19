@@ -34,6 +34,7 @@ class AppContainer(context: Context) {
         if (BuildConfig.AI_KEY.isNotBlank()) ChatCompletionsTransport(BuildConfig.AI_ENDPOINT, BuildConfig.AI_KEY, BuildConfig.AI_MODEL, authHeader = BuildConfig.AI_AUTH_HEADER) else null,
     )
 
-    val auth: AuthRepository = supabase ?: localAuth
+    /** Supabase when it can be reached, otherwise the on-device accounts (see FallbackAuthRepository). */
+    val auth: AuthRepository = supabase?.let { com.chiforest.forestflow.auth.FallbackAuthRepository(it, localAuth) } ?: localAuth
     val remote: RemoteStore = supabase ?: NoRemote
 }
