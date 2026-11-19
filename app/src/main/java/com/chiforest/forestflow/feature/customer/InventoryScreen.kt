@@ -75,7 +75,7 @@ fun InventoryScreen(s: AppState, now: State<Long>, map: MapData, dispatch: (Acti
         // Station card
         ForestCard(Modifier.fillMaxWidth(), radius = 26.dp, padding = androidx.compose.foundation.layout.PaddingValues(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Nearest machine · ${node.shortName} · Building ${node.building}", style = Type.body(12.sp, 700), color = c.red, modifier = Modifier.weight(1f))
+                Text("Nearest machine · ${node.shortName}", style = Type.body(12.sp, 700), color = c.red, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                 Pill("${node.walkMin} min walk", c.amber, c.amberTint, icon = Ic.Bolt)
             }
             Spacer(Modifier.height(6.dp))

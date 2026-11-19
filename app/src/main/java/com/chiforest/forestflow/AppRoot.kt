@@ -1,5 +1,8 @@
 package com.chiforest.forestflow
 
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -203,8 +206,32 @@ private fun RoleShell(s: AppState, now: State<Long>, role: Role, vm: AppViewMode
     val slidePx = with(LocalDensity.current) { Motion.TabSlide.roundToPx() }
     val imeVisible = WindowInsets.isImeVisible
 
+    // Swipe left or right anywhere on a page to go to the next or previous tab (same order as the nav bar).
+    // The map, sliders and sideways-scrolling rows keep their own drags: they consume them first, so no tab change.
+    val order = if (student) studentTabs else listOf(0, 1, 2, 3)
+    val currentTab by rememberUpdatedState(tab)
+    val swipePx = with(LocalDensity.current) { 72.dp.toPx() }
     Box(Modifier.fillMaxSize()) {
-        Box(Modifier.fillMaxSize().then(if (rememberLowEndDevice()) Modifier else Modifier.hazeSource(haze))) {
+        Box(
+            Modifier.fillMaxSize()
+                .pointerInput(order) {
+                    var dx = 0f
+                    detectHorizontalDragGestures(
+                        onDragStart = { dx = 0f },
+                        onDragEnd = {
+                            val i = order.indexOf(currentTab)
+                            val next = when {
+                                dx <= -swipePx -> order.getOrNull(i + 1)
+                                dx >= swipePx -> order.getOrNull(i - 1)
+                                else -> null
+                            }
+                            if (next != null) dispatch(Action.Tab(next))
+                        },
+                        onHorizontalDrag = { _, amount -> dx += amount },
+                    )
+                }
+                .then(if (rememberLowEndDevice()) Modifier else Modifier.hazeSource(haze)),
+        ) {
             AnimatedContent(
                 targetState = tab,
                 transitionSpec = {

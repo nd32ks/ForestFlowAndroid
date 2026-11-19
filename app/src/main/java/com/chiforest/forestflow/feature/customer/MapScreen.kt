@@ -115,7 +115,7 @@ fun MapScreen(s: AppState, map: MapData, dispatch: (Action) -> Unit) {
                             modifier = Modifier.weight(1f).semantics { contentDescription = "Search nodes or buildings" },
                             decorationBox = { inner ->
                                 Box(contentAlignment = Alignment.CenterStart) {
-                                    if (s.search.isEmpty()) Text("Search drinks, machines or buildings…", style = Type.body(15.sp), color = c.faint, maxLines = 1)
+                                    if (s.search.isEmpty()) Text("Drink, machine or building…", style = Type.body(15.sp), color = c.faint, maxLines = 1)
                                     inner()
                                 }
                             },

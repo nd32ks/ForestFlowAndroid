@@ -105,6 +105,6 @@ class MapGestureTest {
         assertTrue("cx ${cam.cx} out of range", cam.cx in 0f..1f)
         assertTrue(cam.cy in 0f..1f)
         // the page did not scroll away: the search field is still on screen
-        rule.onAllNodes(hasText("Search drinks, machines or buildings…", substring = true), useUnmergedTree = true).onFirst().assertExists()
+        rule.onAllNodes(hasText("Drink, machine or building…", substring = true), useUnmergedTree = true).onFirst().assertExists()
     }
 }

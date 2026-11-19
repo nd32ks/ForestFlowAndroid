@@ -243,11 +243,12 @@ fun GlassHeader(
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Chi Forest", style = Type.title(16.sp, 800), color = c.ink)
+                    Text("Chi Forest", style = Type.title(16.sp, 800), color = c.ink, maxLines = 1, softWrap = false)
                     Spacer(Modifier.width(6.dp))
                     Text(
                         if (admin) "ADMIN" else "CAMPUS",
                         style = Type.eyebrow(9.sp),
+                        maxLines = 1, softWrap = false,
                         color = if (admin) Color.White else c.red,
                         modifier = Modifier.clip(RoundedCornerShape(6.dp))
                             .background(if (admin) (if (c.isDark) c.surface2 else c.navy) else c.redTint)
@@ -256,7 +257,8 @@ fun GlassHeader(
                 }
                 Text(subtitle, style = Type.body(12.sp, 500), color = c.faint, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            if (temp != null) {
+            // On narrow phones (e.g. Galaxy S24, 360 dp) the weather pill squeezed the title, so it is hidden there.
+            if (temp != null && androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp >= 400) {
                 Pill(temp, c.blue, c.blueTint, icon = Ic.Sun)
                 Spacer(Modifier.width(4.dp))
             }

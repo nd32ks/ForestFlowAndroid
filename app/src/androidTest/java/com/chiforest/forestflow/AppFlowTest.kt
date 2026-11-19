@@ -1,5 +1,8 @@
 package com.chiforest.forestflow
 
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.swipe
 import android.content.Context
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
@@ -142,6 +145,20 @@ class AppFlowTest {
         see("DRINKS IN THIS MACHINE")
     }
 
+    @Test fun swipe_moves_between_tabs() {
+        agreeAndLogin(supplier = false)
+        see("DRINKS IN THIS MACHINE")
+        fun swipePage(left: Boolean, yFrac: Float) = rule.onRoot().performTouchInput {
+            val y = height * yFrac
+            val (a, b) = if (left) width * 0.85f to width * 0.15f else width * 0.15f to width * 0.85f
+            swipe(androidx.compose.ui.geometry.Offset(a, y), androidx.compose.ui.geometry.Offset(b, y), 250)
+        }
+        swipePage(left = true, yFrac = 0.35f)        // Inventory -> Campus Map
+        see("Drink, machine or building…")
+        swipePage(left = false, yFrac = 0.80f)       // below the map: Campus Map -> Inventory
+        see("DRINKS IN THIS MACHINE")
+    }
+
     @Test fun student_full_flow() {
         assumeTrue("needs every feature switched on", BuildConfig.FEATURE_VIP_CLUB && BuildConfig.FEATURE_CAMPUS_MAP)
         agreeAndLogin(supplier = false)
@@ -161,7 +178,7 @@ class AppFlowTest {
 
         // ---- Map: search, select, campus switch, directions, layers, bookmark, view stock
         nav("Campus Map")
-        see("Search drinks, machines or buildings…")
+        see("Drink, machine or building…")
         rule.onAllNodes(hasContentDescription("Search nodes or buildings")).onFirst().performTextInput("library")
         see("Library Hub · 1F", substring = true)
         tap("Machine 03")
