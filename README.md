@@ -1,5 +1,16 @@
 # Forest Flow (元气森林 Chi Forest) — Android
 
+> ## Assessors: download the app
+> **[Releases ▸ Forest Flow 1.0.1 (the assessed build)](https://github.com/nd32ks/ForestFlowAndroid/releases/latest)**
+>
+> 1. On an Android phone (8.0 or newer), open the link above and tap **ForestFlow-v1.0.1.apk** under *Assets*.
+> 2. Open the downloaded file. If Android asks, allow installs from your browser or Files app.
+> 3. Open **Forest Flow** and sign in with a demo login (see [Demo logins](#demo-logins)).
+>
+> Releases `v1.0.0-test1` to `v1.0.0-test5` are earlier tester builds, kept for the record. Only **v1.0.1** is the assessed build.
+> The release APK contains no AI key, so the drink assistant runs in its offline mode. No Supabase or AI account is needed to try the app.
+> Everything below is for developers who want to build from source.
+
 A native Android app (Kotlin + Jetpack Compose) for Chi Forest smart vending machines on the XJTLU campuses.
 Students find chilled-drink nodes on a real campus map, lock a coil in escrow, show a QR code at the
 machine, get restock alerts and use a VIP pass. Suppliers watch telemetry, dispatch runners, approve
